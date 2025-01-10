@@ -1,0 +1,386 @@
+<mujoco model="N2">
+  <compiler angle="radian" meshdir="meshes/" />
+  <size njmax="500" nconmax="100" />
+
+  <visual>
+      <quality shadowsize='4096'/>
+      <map znear='0.05'/>
+  </visual>
+
+  <default>
+      <joint limited='true'/>
+      <motor ctrllimited='true'/>
+      <geom  condim='4' contype="1" conaffinity="15" solref='0.001 2' friction='0.9 0.2 0.2'/>
+      <equality solref='0.001 2'/>
+      <default class='visualgeom'>
+          <geom material='visualgeom' condim='1' contype='0' conaffinity='0'/>
+      </default>
+
+      <default class='arm_joint_param'>
+            <joint  damping="0.05" frictionloss="0.05" armature="0.01"/>
+        </default>  
+    
+      <default class='leg_joint_param'>
+          <joint  damping="0.01" frictionloss="0.01" armature="0.01"/>
+      </default>
+
+      <default class='obstacle'>
+          <geom condim='3' contype='1' conaffinity='15' rgba="0.8 0.8 0.8 1"/>
+      </default>
+
+  </default>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+    <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+        width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>
+    <texture name="texplane2" type="2d" builtin="checker" rgb1="1 0.3137 0.1843" rgb2="0.0 0.30196 0.38039"
+        width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>
+
+    <material name="matplane" reflectance="0." texture="texplane" texrepeat="1 1" texuniform="true"/>
+    <material name="matplane2" reflectance="0.1" texture="texplane2" texrepeat="1 1" texuniform="true"/>
+
+    <material name='visualgeom'  rgba='0.5 0.9 0.2 1'/>
+    <mesh name="base_link" file="base_link.STL"/>
+    <mesh name="L_arm_shoulder_pitch_Link" file="l_arm_shoulder_pitch_Link.STL"/>
+    <mesh name="L_arm_shoulder_roll_Link" file="l_arm_shoulder_roll_Link.STL"/>
+    <mesh name="L_arm_shoulder_yaw_Link" file="l_arm_shoulder_yaw_Link.STL"/>
+    <mesh name="L_arm_elbow_Link" file="l_arm_elbow_Link.STL"/>
+    <mesh name="L_arm_hand_Link" file="l_arm_hand_Link.STL"/>
+    <mesh name="R_arm_shoulder_pitch_Link" file="r_arm_shoulder_pitch_Link.STL"/>
+    <mesh name="R_arm_shoulder_roll_Link" file="r_arm_shoulder_roll_Link.STL"/>
+    <mesh name="R_arm_shoulder_yaw_Link" file="r_arm_shoulder_yaw_Link.STL"/>
+    <mesh name="R_arm_elbow_Link" file="r_arm_elbow_Link.STL"/>
+    <mesh name="R_arm_hand_Link" file="r_arm_hand_link.STL"/>
+    <mesh name="L_leg_hip_roll_link" file="l_leg_hip_roll_link.STL"/>
+    <mesh name="L_leg_hip_yaw_link" file="l_leg_hip_yaw_link.STL"/>
+    <mesh name="L_leg_hip_pitch_link" file="l_leg_hip_pitch_link.STL"/>
+    <mesh name="L_leg_knee_link" file="l_leg_knee_link.STL"/>
+    <mesh name="L_leg_ankle_link" file="l_leg_ankle_link.STL"/>
+    <mesh name="R_leg_hip_roll_link" file="r_leg_hip_roll_link.STL"/>
+    <mesh name="R_leg_hip_yaw_link" file="r_leg_hip_yaw_link.STL"/>
+    <mesh name="R_leg_hip_pitch_link" file="r_leg_hip_pitch_link.STL"/>
+    <mesh name="R_leg_knee_link" file="r_leg_knee_link.STL"/>
+    <mesh name="R_leg_ankle_link" file="r_leg_ankle_link.STL"/>
+    <hfield name='hf0' nrow='200' ncol='200' size="10 5 0.2 .1"/>
+  </asset>
+  <worldbody>
+    <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
+    <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"/>
+    <geom name="ground" type="plane" size="0 0 1" pos="0.001 0 0" quat="1 0 0 0" material="matplane" condim="3" conaffinity='15'/>
+
+    <body name="base_link" pos="0 0 1">
+      <inertial pos="0.0064715 1.331e-05 0.03342" quat="0.704448 0.704422 -0.0613864 0.0614369" mass="8.8199" diaginertia="0.0395063 0.0344867 0.01298"/>
+      <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="base_link"/>
+      <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="base_link" class="visualgeom"/>
+      <freejoint name="root" />
+      <site name='imu' size='0.01' pos='0.0 0 0.0'/>
+
+      <body name="L_arm_shoulder_pitch_Link" pos="0.003069 0.12012 0.1693" quat="0.766033 -0.642802 0 0">
+        <inertial pos="0.0029192 -0.00080352 0.039673" quat="0.986033 -0.166437 0.00608706 0.000749197" mass="0.52662" diaginertia="0.00025318 0.000187929 0.000187011"/>
+        <joint name="L_arm_shoulder_pitch_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-2.7 2.7" class='arm_joint_param'/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_arm_shoulder_pitch_Link"/>
+        <geom type="mesh" rgba="1 1 1 1" mesh="L_arm_shoulder_pitch_Link" class="visualgeom"/>
+        <body name="L_arm_shoulder_roll_Link" pos="0 0.00019378 0.04788" quat="0.766033 0.642802 0 0">
+          <inertial pos="0.0036303 0.029503 -0.056455" quat="0.815246 0.578909 0.014489 0.0053366" mass="0.74072" diaginertia="0.00044177 0.000391141 0.000332899"/>
+          <joint name="L_arm_shoulder_roll_joint" pos="0 0 0" axis="1 0 0" limited="true" range="0 2.1" class='arm_joint_param'/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_arm_shoulder_roll_Link"/>
+          <geom type="mesh" rgba="1 1 1 1" mesh="L_arm_shoulder_roll_Link" class="visualgeom"/>
+          <body name="L_arm_shoulder_yaw_Link" pos="0.0022697 0.030482 -0.10991">
+            <inertial pos="0.00034288 3.4776e-05 -0.048198" quat="0.706687 -0.0134504 -0.0087875 0.707344" mass="0.61963" diaginertia="0.000339125 0.00025078 0.000220345"/>
+            <joint name="L_arm_shoulder_yaw_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-2.7 2.7" class='arm_joint_param'/>
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_arm_shoulder_yaw_Link"/>
+            <geom type="mesh" rgba="1 1 1 1" mesh="L_arm_shoulder_yaw_Link" class="visualgeom"/>
+            <body name="L_arm_elbow_Link" pos="0.00075874 0 -0.061501" quat="0.94441 0 0.328769 0">
+              <inertial pos="0.051415 0.000999334 -0.0713908" quat="0.674266 -0.231615 -0.220539 0.665644" mass="0.3016" diaginertia="0.00107563 0.00106371 5.87547e-05"/>
+              <joint name="L_arm_elbow_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.83 1.83" class='arm_joint_param'/>
+              <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_arm_elbow_Link"/>
+              <geom type="mesh" rgba="1 1 1 1" mesh="L_arm_elbow_Link" class="visualgeom"/>
+              <geom pos="0.12 0.00036368 -0.15958" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_arm_hand_Link"/>
+              <geom pos="0.12 0.00036368 -0.15958" type="mesh" rgba="1 1 1 1" mesh="L_arm_hand_Link" class="visualgeom"/>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="R_arm_shoulder_pitch_Link" pos="0.003069 -0.12012 0.1693" quat="0.766033 0.642802 0 0">
+        <inertial pos="0.0029192 0.00080351 0.039673" quat="0.986037 0.166412 0.00608663 -0.000749872" mass="0.52663" diaginertia="0.00025318 0.000187929 0.000187011"/>
+        <joint name="R_arm_shoulder_pitch_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-2.7 2.7" class='arm_joint_param'/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.64706 0.61961 0.58824 1" mesh="R_arm_shoulder_pitch_Link"/>
+        <geom type="mesh" rgba="0.64706 0.61961 0.58824 1" mesh="R_arm_shoulder_pitch_Link" class="visualgeom"/>
+        <body name="R_arm_shoulder_roll_Link" pos="0 0.00073176 0.047945" quat="0.766033 -0.642802 0 0">
+          <inertial pos="0.0036308 -0.0296 -0.057378" quat="0.578888 0.815261 -0.00535788 -0.0144817" mass="0.74072" diaginertia="0.00044177 0.000391132 0.000332898"/>
+          <joint name="R_arm_shoulder_roll_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-2.1 0" class='arm_joint_param'/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="R_arm_shoulder_roll_Link"/>
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="R_arm_shoulder_roll_Link" class="visualgeom"/>
+          <body name="R_arm_shoulder_yaw_Link" pos="0.0022697 -0.030579 -0.11084">
+            <inertial pos="0.00017867 -3.491e-05 -0.0482" quat="0.707336 -0.00878758 -0.0134522 0.706694" mass="0.61963" diaginertia="0.000339125 0.00025078 0.000220345"/>
+            <joint name="R_arm_shoulder_yaw_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-2.7 2.7" class='arm_joint_param'/>
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.64706 0.61961 0.58824 1" mesh="R_arm_shoulder_yaw_Link"/>
+            <geom type="mesh" rgba="0.64706 0.61961 0.58824 1" mesh="R_arm_shoulder_yaw_Link" class="visualgeom"/>
+            <body name="R_arm_elbow_Link" pos="0.00075874 0 -0.061501" quat="0.94441 0 0.328769 0">
+              <inertial pos="0.0514162 -0.00099934 -0.0713908" quat="0.665619 -0.220552 -0.231612 0.674288" mass="0.3016" diaginertia="0.00107565 0.00106373 5.87548e-05"/>
+              <joint name="R_arm_elbow_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.83 1.83" class='arm_joint_param'/>
+              <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="R_arm_elbow_Link"/>
+              <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="R_arm_elbow_Link" class="visualgeom"/>
+              <geom pos="0.11949 0.00018431 -0.15893" type="mesh" contype="0" conaffinity="0" group="1" rgba="0.29804 0.29804 0.29804 1" mesh="R_arm_hand_Link"/>
+              <geom pos="0.11949 0.00018431 -0.15893" type="mesh" rgba="0.29804 0.29804 0.29804 1" mesh="R_arm_hand_Link" class="visualgeom"/>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="L_leg_hip_roll_link" pos="-0.0058585 0.09 -0.084647" quat="0.923879 0 0.382684 0">
+        <inertial pos="-0.019835 0.00022301 -0.06532" quat="0.999457 0.032723 -0.00390925 -5.60726e-05" mass="1.2579" diaginertia="0.00200796 0.00115903 0.00108262"/>
+        <joint name="L_leg_hip_roll_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-0.65 1" class="leg_joint_param"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="L_leg_hip_roll_link"/>
+        <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="L_leg_hip_roll_link" class="visualgeom"/>
+        <body name="L_leg_hip_yaw_link" pos="0.00095491 0.0012327 -0.085715">
+          <inertial pos="0.08345 -0.017821 0.0020611" quat="0.494653 0.502116 0.503815 0.499368" mass="1.8275" diaginertia="0.00371679 0.00228686 0.00177755"/>
+          <joint name="L_leg_hip_yaw_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.65 1" class="leg_joint_param"/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="L_leg_hip_yaw_link"/>
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="L_leg_hip_yaw_link" class="visualgeom"/>
+          <body name="L_leg_hip_pitch_link" pos="0.09758 0.016767 0.0021351">
+            <inertial pos="0.019199 0.029105 -0.014069" quat="0.321043 0.643966 0.628994 0.294287" mass="2.7631" diaginertia="0.00946921 0.00711253 0.00274586"/>
+            <joint name="L_leg_hip_pitch_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.4854 0.7146" class="leg_joint_param"/>
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_leg_hip_pitch_link"/>
+            <geom type="mesh" rgba="1 1 1 1" mesh="L_leg_hip_pitch_link" class="visualgeom"/>
+            <body name="L_leg_knee_link" pos="0.14142 0 -0.14142" quat="0.707107 0 -0.707107 0">
+              <inertial pos="-0.043487 0.0051956 -0.06793" quat="0.649967 0.286097 0.262096 0.65345" mass="1.4138" diaginertia="0.00418203 0.00380028 0.000573285"/>
+              <joint name="L_leg_knee_joint" pos="0 0 0" axis="0 1 0" limited="true" range="0 2.15"/>
+              <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_leg_knee_link" class="leg_joint_param"/>
+              <geom type="mesh" rgba="1 1 1 1" mesh="L_leg_knee_link" class="visualgeom"/>
+              <body name="L_leg_ankle_link" pos="-0.17293 0.001104 -0.19415" quat="0.92388 0 0.382683 0">
+                <inertial pos="0.019166 4.1335e-07 -0.025831" quat="-6.61434e-06 0.71182 2.05228e-05 0.702362" mass="0.24025" diaginertia="0.000596868 0.0005037 0.000104482"/>
+                <joint name="L_leg_ankle_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.05 0.75" class="leg_joint_param"/>
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="L_leg_ankle_link"/>
+                <geom type="mesh" rgba="1 1 1 1" mesh="L_leg_ankle_link"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="R_leg_hip_roll_link" pos="-0.0058585 -0.09 -0.084647" quat="0.923879 0 0.382684 0">
+        <inertial pos="-0.019835 -7.4414e-05 -0.06532" quat="0.999453 -0.0328232 -0.00391332 0.000204067" mass="1.2579" diaginertia="0.00200796 0.00115903 0.00108261"/>
+        <joint name="R_leg_hip_roll_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-1 0.65" class="leg_joint_param"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.79216 0.81961 0.93333 1" mesh="R_leg_hip_roll_link"/>
+        <geom type="mesh" rgba="0.79216 0.81961 0.93333 1" mesh="R_leg_hip_roll_link" class="visualgeom"/>
+        <body name="R_leg_hip_yaw_link" pos="0.00095491 -0.0012327 -0.085715">
+          <inertial pos="0.08345 0.017821 0.0020611" quat="0.499362 0.503821 0.502122 0.494646" mass="1.8275" diaginertia="0.00371679 0.00228686 0.00177755"/>
+          <joint name="R_leg_hip_yaw_joint" pos="0 0 0" axis="1 0 0" limited="true" range="-1 0.65" class="leg_joint_param"/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_hip_yaw_link"/>
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_hip_yaw_link" class="visualgeom"/>
+          <body name="R_leg_hip_pitch_link" pos="0.09758 -0.016767 0.0021351">
+            <inertial pos="0.016948 -0.029612 -0.011724" quat="0.29431 0.629012 0.64395 0.32102" mass="2.7131" diaginertia="0.00946818 0.00709893 0.00273229"/>
+            <joint name="R_leg_hip_pitch_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.4854 0.7146"  class="leg_joint_param"/>
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_hip_pitch_link"/>
+            <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_hip_pitch_link" class="visualgeom"/>
+            <body name="R_leg_knee_link" pos="0.14142 0 -0.14142" quat="0.707107 0 -0.707107 0">
+              <inertial pos="-0.04349 -0.0051979 -0.067929" quat="0.653446 0.262099 0.286094 0.649971" mass="1.414" diaginertia="0.00418223 0.00380038 0.000573385"/>
+              <joint name="R_leg_knee_joint" pos="0 0 0" axis="0 1 0" limited="true" range="0 2.15" class="leg_joint_param"/>
+              <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_knee_link"/>
+              <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="R_leg_knee_link" class="visualgeom"/>
+              <body name="R_leg_ankle_link" pos="-0.17293 -0.001104 -0.19415" quat="0.92388 0 0.382683 0">
+                <inertial pos="0.019165 -7.5094e-07 -0.025831" quat="0.00218587 0.708523 0.000866143 0.705684" mass="0.24025" diaginertia="0.00100012 0.000913211 0.000122603"/>
+                <joint name="R_leg_ankle_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.05 0.75" class="leg_joint_param"/>
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1" mesh="R_leg_ankle_link"/>
+                <geom type="mesh" rgba="1 1 1 1" mesh="R_leg_ankle_link"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <!-- <geom name="box00" type="box" pos='-0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box01" type="box" pos=' 0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box02" type="box" pos=' 0.8 0 0.16' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box03" type="box" pos=' 1.2 0 0.32' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box04" type="box" pos=' 1.6 0 0.48' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box05" type="box" pos=' 2.0 0 0.64' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box06" type="box" pos=' 2.4 0 0.80' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box07" type="box" pos=' 2.8 0 0.96' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box08" type="box" pos=' 3.2 0 1.12' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box09" type="box" pos=' 3.6 0 1.28' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box10" type="box" pos=' 4.0 0 1.44' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box11" type="box" pos=' 4.4 0 1.60' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box12" type="box" pos=' 4.8 0 1.76' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box13" type="box" pos=' 5.2 0 1.92' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box14" type="box" pos=' 5.6 0 2.08' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box15" type="box" pos=' 6.0 0 2.24' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box16" type="box" pos=' 6.4 0 2.40' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box17" type="box" pos=' 6.8 0 2.56' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box18" type="box" pos=' 7.2 0 2.72' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box19" type="box" pos=' 7.6 0 2.88' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box20" type="box" pos=' 8.0 0 3.04' size='0.4 4 0.24' group="0"  class="obstacle"/> -->
+    <!-- <geom name="box00" type="box" pos='-0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box01" type="box" pos=' 0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box02" type="box" pos=' 0.8 0 0.14' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box03" type="box" pos=' 1.2 0 0.28' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box04" type="box" pos=' 1.6 0 0.42' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box05" type="box" pos=' 2.0 0 0.56' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box06" type="box" pos=' 2.4 0 0.70' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box07" type="box" pos=' 2.8 0 0.84' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box08" type="box" pos=' 3.2 0 0.98' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box09" type="box" pos=' 3.6 0 1.12' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box10" type="box" pos=' 4.0 0 1.26' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box11" type="box" pos=' 4.4 0 1.40' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box12" type="box" pos=' 4.8 0 1.54' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box13" type="box" pos=' 5.2 0 1.68' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box14" type="box" pos=' 5.6 0 1.82' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box15" type="box" pos=' 6.0 0 1.96' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box16" type="box" pos=' 6.4 0 2.10' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box17" type="box" pos=' 6.8 0 2.24' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box18" type="box" pos=' 7.2 0 2.38' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box19" type="box" pos=' 7.6 0 2.52' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box20" type="box" pos=' 8.0 0 2.66' size='0.4 4 0.24' group="0"  class="obstacle"/> -->
+    <!-- <geom name="box00" type="box" pos='-0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box01" type="box" pos=' 0.4 0 0   ' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box02" type="box" pos=' 0.8 0 0.12' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box03" type="box" pos=' 1.2 0 0.24' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box04" type="box" pos=' 1.6 0 0.36' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box05" type="box" pos=' 2.0 0 0.48' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box06" type="box" pos=' 2.4 0 0.60' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box07" type="box" pos=' 2.8 0 0.72' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box08" type="box" pos=' 3.2 0 0.84' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box09" type="box" pos=' 3.6 0 0.96' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box10" type="box" pos=' 4.0 0 1.08' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box11" type="box" pos=' 4.4 0 1.20' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box12" type="box" pos=' 4.8 0 1.32' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box13" type="box" pos=' 5.2 0 1.44' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box14" type="box" pos=' 5.6 0 1.56' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box15" type="box" pos=' 6.0 0 1.68' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box16" type="box" pos=' 6.4 0 1.80' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box17" type="box" pos=' 6.8 0 1.92' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box18" type="box" pos=' 7.2 0 2.04' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box19" type="box" pos=' 7.6 0 2.16' size='0.4 4 0.24' group="0"  class="obstacle"/>
+    <geom name="box20" type="box" pos=' 8.0 0 2.28' size='0.4 4 0.24' group="0"  class="obstacle"/> -->
+    <!-- <geom name="box00" type="box" pos='-0.4 0 0   ' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box01" type="box" pos=' 0.4 0 0   ' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box02" type="box" pos=' 0.8 0 0.05' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box03" type="box" pos=' 1.2 0 0.10' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box04" type="box" pos=' 1.6 0 0.15' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box05" type="box" pos=' 2.0 0 0.20' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box06" type="box" pos=' 2.4 0 0.25' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box07" type="box" pos=' 2.8 0 0.30' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box08" type="box" pos=' 3.2 0 0.35' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box09" type="box" pos=' 3.6 0 0.40' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box10" type="box" pos=' 4.0 0 0.45' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box11" type="box" pos=' 4.4 0 0.50' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box12" type="box" pos=' 4.8 0 0.55' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box13" type="box" pos=' 5.2 0 0.60' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box14" type="box" pos=' 5.6 0 0.65' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box15" type="box" pos=' 6.0 0 0.70' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box16" type="box" pos=' 6.4 0 0.75' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box17" type="box" pos=' 6.8 0 0.80' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box18" type="box" pos=' 7.2 0 0.85' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box19" type="box" pos=' 7.6 0 0.90' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box20" type="box" pos=' 8.0 0 0.95' size='0.4 4 0.2' group="0"  class="obstacle"/> -->
+    <!-- <geom name="box00" type="box" pos='-0.4 0 0   ' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box01" type="box" pos=' 0.4 0 0   ' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box02" type="box" pos=' 0.8 0 0.08' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box03" type="box" pos=' 1.2 0 0.16' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box04" type="box" pos=' 1.6 0 0.24' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box05" type="box" pos=' 2.0 0 0.32' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box06" type="box" pos=' 2.4 0 0.40' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box07" type="box" pos=' 2.8 0 0.48' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box08" type="box" pos=' 3.2 0 0.56' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box09" type="box" pos=' 3.6 0 0.64' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box10" type="box" pos=' 4.0 0 0.72' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box11" type="box" pos=' 4.4 0 0.80' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box12" type="box" pos=' 4.8 0 0.88' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box13" type="box" pos=' 5.2 0 0.96' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box14" type="box" pos=' 5.6 0 1.04' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box15" type="box" pos=' 6.0 0 1.12' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box16" type="box" pos=' 6.4 0 1.20' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box17" type="box" pos=' 6.8 0 1.28' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box18" type="box" pos=' 7.2 0 1.36' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box19" type="box" pos=' 7.6 0 1.44' size='0.4 4 0.2' group="0"  class="obstacle"/>
+    <geom name="box20" type="box" pos=' 8.0 0 1.52' size='0.4 4 0.2' group="0"  class="obstacle"/> -->
+  </worldbody>
+
+  <actuator>
+      <motor name="L_arm_shoulder_pitch_joint"   joint="L_arm_shoulder_pitch_joint"   gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_arm_shoulder_roll_joint"    joint="L_arm_shoulder_roll_joint"    gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_arm_shoulder_yaw_joint"     joint="L_arm_shoulder_yaw_joint"     gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_arm_elbow_joint"            joint="L_arm_elbow_joint"            gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_arm_shoulder_pitch_joint"   joint="R_arm_shoulder_pitch_joint"   gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_arm_shoulder_roll_joint"    joint="R_arm_shoulder_roll_joint"    gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_arm_shoulder_yaw_joint"     joint="R_arm_shoulder_yaw_joint"     gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_arm_elbow_joint"            joint="R_arm_elbow_joint"            gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_leg_hip_yaw_joint"          joint="L_leg_hip_yaw_joint"          gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_leg_hip_roll_joint"         joint="L_leg_hip_roll_joint"         gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_leg_hip_pitch_joint"        joint="L_leg_hip_pitch_joint"        gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_leg_knee_joint"             joint="L_leg_knee_joint"             gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="L_leg_ankle_joint"            joint="L_leg_ankle_joint"            gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_leg_hip_yaw_joint"          joint="R_leg_hip_yaw_joint"          gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_leg_hip_roll_joint"         joint="R_leg_hip_roll_joint"         gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_leg_hip_pitch_joint"        joint="R_leg_hip_pitch_joint"        gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_leg_knee_joint"             joint="R_leg_knee_joint"             gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+      <motor name="R_leg_ankle_joint"            joint="R_leg_ankle_joint"            gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+  </actuator>
+
+  <sensor>
+      <actuatorpos name='L_arm_shoulder_pitch_joint_pos'    actuator='L_arm_shoulder_pitch_joint'   user='13'/>
+      <actuatorpos name='L_arm_shoulder_roll_joint_pos'     actuator='L_arm_shoulder_roll_joint'    user='13'/>
+      <actuatorpos name='L_arm_shoulder_yaw_joint_pos'      actuator='L_arm_shoulder_yaw_joint'     user='13'/>
+      <actuatorpos name='L_arm_elbow_joint_pos'             actuator='L_arm_elbow_joint'            user='13'/>
+      <actuatorpos name='R_arm_shoulder_pitch_joint_pos'    actuator='R_arm_shoulder_pitch_joint'   user='13'/>
+      <actuatorpos name='R_arm_shoulder_roll_joint_pos'     actuator='R_arm_shoulder_roll_joint'    user='13'/>
+      <actuatorpos name='R_arm_shoulder_yaw_joint_pos'      actuator='R_arm_shoulder_yaw_joint'     user='13'/>
+      <actuatorpos name='R_arm_elbow_joint_pos'             actuator='R_arm_elbow_joint'            user='13'/>
+      <actuatorpos name='L_leg_hip_yaw_joint_pos'           actuator='L_leg_hip_yaw_joint'          user='13'/>
+      <actuatorpos name='L_leg_hip_roll_joint_pos'          actuator='L_leg_hip_roll_joint'         user='13'/>
+      <actuatorpos name='L_leg_hip_pitch_joint_pos'         actuator='L_leg_hip_pitch_joint'        user='13'/>
+      <actuatorpos name='L_leg_knee_joint_pos'              actuator='L_leg_knee_joint'             user='13'/>
+      <actuatorpos name='L_leg_ankle_joint_pos'             actuator='L_leg_ankle_joint'            user='13'/>
+      <actuatorpos name='R_leg_hip_yaw_joint_pos'           actuator='R_leg_hip_yaw_joint'          user='13'/>
+      <actuatorpos name='R_leg_hip_roll_joint_pos'          actuator='R_leg_hip_roll_joint'         user='13'/>
+      <actuatorpos name='R_leg_hip_pitch_joint_pos'         actuator='R_leg_hip_pitch_joint'        user='13'/>
+      <actuatorpos name='R_leg_knee_joint_pos'              actuator='R_leg_knee_joint'             user='13'/>
+      <actuatorpos name='R_leg_ankle_joint_pos'             actuator='R_leg_ankle_joint'            user='13'/>
+
+      <actuatorvel name='L_arm_shoulder_pitch_joint_vel'    actuator='L_arm_shoulder_pitch_joint'   user='13'/>
+      <actuatorvel name='L_arm_shoulder_roll_joint_vel'     actuator='L_arm_shoulder_roll_joint'    user='13'/>
+      <actuatorvel name='L_arm_shoulder_yaw_joint_vel'      actuator='L_arm_shoulder_yaw_joint'     user='13'/>
+      <actuatorvel name='L_arm_elbow_joint_vel'             actuator='L_arm_elbow_joint'            user='13'/>
+      <actuatorvel name='R_arm_shoulder_pitch_joint_vel'    actuator='R_arm_shoulder_pitch_joint'   user='13'/>
+      <actuatorvel name='R_arm_shoulder_roll_joint_vel'     actuator='R_arm_shoulder_roll_joint'    user='13'/>
+      <actuatorvel name='R_arm_shoulder_yaw_joint_vel'      actuator='R_arm_shoulder_yaw_joint'     user='13'/>
+      <actuatorvel name='R_arm_elbow_joint_vel'             actuator='R_arm_elbow_joint'            user='13'/>
+      <actuatorvel name='L_leg_hip_yaw_joint_vel'           actuator='L_leg_hip_yaw_joint'          user='13'/>
+      <actuatorvel name='L_leg_hip_roll_joint_vel'          actuator='L_leg_hip_roll_joint'         user='13'/>
+      <actuatorvel name='L_leg_hip_pitch_joint_vel'         actuator='L_leg_hip_pitch_joint'        user='13'/>
+      <actuatorvel name='L_leg_knee_joint_vel'              actuator='L_leg_knee_joint'             user='13'/>
+      <actuatorvel name='L_leg_ankle_joint_vel'             actuator='L_leg_ankle_joint'            user='13'/>
+      <actuatorvel name='R_leg_hip_yaw_joint_vel'           actuator='R_leg_hip_yaw_joint'          user='13'/>
+      <actuatorvel name='R_leg_hip_roll_joint_vel'          actuator='R_leg_hip_roll_joint'         user='13'/>
+      <actuatorvel name='R_leg_hip_pitch_joint_vel'         actuator='R_leg_hip_pitch_joint'        user='13'/>
+      <actuatorvel name='R_leg_knee_joint_vel'              actuator='R_leg_knee_joint'             user='13'/>
+      <actuatorvel name='R_leg_ankle_joint_vel'             actuator='R_leg_ankle_joint'            user='13'/>
+
+      <actuatorfrc name='L_arm_shoulder_pitch_joint_frc'    actuator='L_arm_shoulder_pitch_joint'   user='13' noise='1e-3'/>
+      <actuatorfrc name='L_arm_shoulder_roll_joint_frc'     actuator='L_arm_shoulder_roll_joint'    user='13' noise='1e-3'/>
+      <actuatorfrc name='L_arm_shoulder_yaw_joint_frc'      actuator='L_arm_shoulder_yaw_joint'     user='13' noise='1e-3'/>
+      <actuatorfrc name='L_arm_elbow_joint_frc'             actuator='L_arm_elbow_joint'            user='13' noise='1e-3'/>
+      <actuatorfrc name='R_arm_shoulder_pitch_joint_frc'    actuator='R_arm_shoulder_pitch_joint'   user='13' noise='1e-3'/>
+      <actuatorfrc name='R_arm_shoulder_roll_joint_frc'     actuator='R_arm_shoulder_roll_joint'    user='13' noise='1e-3'/>
+      <actuatorfrc name='R_arm_shoulder_yaw_joint_frc'      actuator='R_arm_shoulder_yaw_joint'     user='13' noise='1e-3'/>
+      <actuatorfrc name='R_arm_elbow_joint_frc'             actuator='R_arm_elbow_joint'            user='13' noise='1e-3'/>
+      <actuatorfrc name='L_leg_hip_yaw_joint_frc'           actuator='L_leg_hip_yaw_joint'          user='13' noise='1e-3'/>
+      <actuatorfrc name='L_leg_hip_roll_joint_frc'          actuator='L_leg_hip_roll_joint'         user='13' noise='1e-3'/>
+      <actuatorfrc name='L_leg_hip_pitch_joint_frc'         actuator='L_leg_hip_pitch_joint'        user='13' noise='1e-3'/>
+      <actuatorfrc name='L_leg_knee_joint_frc'              actuator='L_leg_knee_joint'             user='13' noise='1e-3'/>
+      <actuatorfrc name='L_leg_ankle_joint_frc'             actuator='L_leg_ankle_joint'            user='13' noise='1e-3'/>
+      <actuatorfrc name='R_leg_hip_yaw_joint_frc'           actuator='R_leg_hip_yaw_joint'          user='13' noise='1e-3'/>
+      <actuatorfrc name='R_leg_hip_roll_joint_frc'          actuator='R_leg_hip_roll_joint'         user='13' noise='1e-3'/>
+      <actuatorfrc name='R_leg_hip_pitch_joint_frc'         actuator='R_leg_hip_pitch_joint'        user='13' noise='1e-3'/>
+      <actuatorfrc name='R_leg_knee_joint_frc'              actuator='R_leg_knee_joint'             user='13' noise='1e-3'/>
+      <actuatorfrc name='R_leg_ankle_joint_frc'             actuator='R_leg_ankle_joint'            user='13' noise='1e-3'/>
+
+      <framequat     name='orientation' objtype='site' noise='0.001' objname='imu'/>
+      <framepos      name='position' objtype='site' noise='0.001' objname='imu'/>
+      <gyro          name='angular-velocity'    site='imu' noise='0.005' cutoff='34.9'/>
+      <velocimeter   name='linear-velocity'     site='imu' noise='0.001' cutoff='30'/>
+      <accelerometer name='linear-acceleration' site='imu' noise='0.005' cutoff='157'/>
+      <magnetometer  name='magnetometer'        site='imu'/>
+
+  </sensor>
+</mujoco>

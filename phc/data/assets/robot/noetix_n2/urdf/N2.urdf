@@ -1,0 +1,1214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="N2">
+  <!-- <link name="floor" />
+  <joint
+    name="floor_2_base"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="floor" />
+    <child
+      link="base_link" />
+  </joint> -->
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0061235 0.00023416 0.048407"
+        rpy="0 0 0" />
+      <mass
+        value="7.7249" />
+      <inertia
+        ixx="0.024773"
+        ixy="-1.2078E-05"
+        ixz="0.0012717"
+        iyy="0.013363"
+        iyz="-6.7301E-06"
+        izz="0.01952" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="L_arm_shoulder_pitch_Link">
+    <inertial>
+      <origin
+        xyz="0.0029192 -0.00080352 0.039673"
+        rpy="0 0 0" />
+      <mass
+        value="0.52662" />
+      <inertia
+        ixx="0.00025317"
+        ixy="-3.9345E-08"
+        ixz="-8.0968E-07"
+        iyy="0.00018783"
+        iyz="-2.8405E-07"
+        izz="0.00018712" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_pitch_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_pitch_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_arm_shoulder_pitch_joint"
+    type="revolute">
+    <origin
+      xyz="0.003069 0.12012 0.1693"
+      rpy="-1.3963 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="L_arm_shoulder_pitch_Link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-2.7"
+      upper="2.7"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_arm_shoulder_roll_Link">
+    <inertial>
+      <origin
+        xyz="0.0036303 0.029503 -0.056455"
+        rpy="0 0 0" />
+      <mass
+        value="0.74072" />
+      <inertia
+        ixx="0.00044167"
+        ixy="2.9273E-06"
+        ixz="-1.4544E-06"
+        iyy="0.0003393"
+        iyz="1.8078E-05"
+        izz="0.00038484" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_roll_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_roll_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_arm_shoulder_roll_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.00019378 0.04788"
+      rpy="1.4963 0 0" />
+    <parent
+      link="L_arm_shoulder_pitch_Link" />
+    <child
+      link="L_arm_shoulder_roll_Link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="2.1"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_arm_shoulder_yaw_Link">
+    <inertial>
+      <origin
+        xyz="0.00034288 3.4776E-05 -0.048198"
+        rpy="0 0 0" />
+      <mass
+        value="0.61963" />
+      <inertia
+        ixx="0.00025075"
+        ixy="-6.6541E-08"
+        ixz="9.5712E-07"
+        iyy="0.00033912"
+        iyz="-7.839E-07"
+        izz="0.00022038" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_yaw_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_shoulder_yaw_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_arm_shoulder_yaw_joint"
+    type="revolute">
+    <origin
+      xyz="0.0022697 0.030482 -0.10991"
+      rpy="0 0 0" />
+    <parent
+      link="L_arm_shoulder_roll_Link" />
+    <child
+      link="L_arm_shoulder_yaw_Link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-2.7"
+      upper="2.7"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_arm_elbow_Link">
+    <inertial>
+      <origin
+        xyz="0.012361 0.0024281 -0.020201"
+        rpy="0 0 0" />
+      <mass
+        value="0.12449" />
+      <inertia
+        ixx="3.6839E-05"
+        ixy="-2.2424E-07"
+        ixz="6.0046E-06"
+        iyy="5.1406E-05"
+        iyz="3.9475E-07"
+        izz="2.8095E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_elbow_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_elbow_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_arm_elbow_joint"
+    type="revolute">
+    <origin
+      xyz="0.00075874 0 -0.061501"
+      rpy="0 0.67 0" />
+    <parent
+      link="L_arm_shoulder_yaw_Link" />
+    <child
+      link="L_arm_elbow_Link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.83"
+      upper="1.83"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_arm_hand_Link">
+    <inertial>
+      <origin
+        xyz="-0.041134 -0.00036862 0.052208"
+        rpy="0 0 0" />
+      <mass
+        value="0.17711" />
+      <inertia
+        ixx="0.00010218"
+        ixy="2.2121E-10"
+        ixz="5.4403E-05"
+        iyy="0.00014502"
+        iyz="-1.3034E-10"
+        izz="7.5996E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_hand_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_arm_hand_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_arm_hand_joint"
+    type="fixed">
+    <origin
+      xyz="0.12 0.00036368 -0.15958"
+      rpy="0 0 0" />
+    <parent
+      link="L_arm_elbow_Link" />
+    <child
+      link="L_arm_hand_Link" />
+    <axis
+      xyz="0 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_arm_shoulder_pitch_Link">
+    <inertial>
+      <origin
+        xyz="0.0029192 0.00080351 0.039673"
+        rpy="0 0 0" />
+      <mass
+        value="0.52663" />
+      <inertia
+        ixx="0.00025317"
+        ixy="3.9227E-08"
+        ixz="-8.0964E-07"
+        iyy="0.00018783"
+        iyz="2.8399E-07"
+        izz="0.00018712" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_pitch_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.64706 0.61961 0.58824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_pitch_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_arm_shoulder_pitch_joint"
+    type="revolute">
+    <origin
+      xyz="0.003069 -0.12012 0.1693"
+      rpy="1.3963 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="R_arm_shoulder_pitch_Link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-2.7"
+      upper="2.7"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_arm_shoulder_roll_Link">
+    <inertial>
+      <origin
+        xyz="0.0036308 -0.0296 -0.057378"
+        rpy="0 0 0" />
+      <mass
+        value="0.74072" />
+      <inertia
+        ixx="0.00044167"
+        ixy="-2.9293E-06"
+        ixz="-1.453E-06"
+        iyy="0.0003393"
+        iyz="-1.8078E-05"
+        izz="0.00038483" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_roll_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_roll_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_arm_shoulder_roll_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.00073176 0.047945"
+      rpy="-1.4963 0 0" />
+    <parent
+      link="R_arm_shoulder_pitch_Link" />
+    <child
+      link="R_arm_shoulder_roll_Link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-2.1"
+      upper="0"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_arm_shoulder_yaw_Link">
+    <inertial>
+      <origin
+        xyz="0.00017867 -3.491E-05 -0.0482"
+        rpy="0 0 0" />
+      <mass
+        value="0.61963" />
+      <inertia
+        ixx="0.00025075"
+        ixy="6.473E-08"
+        ixz="9.5719E-07"
+        iyy="0.00033912"
+        iyz="7.8418E-07"
+        izz="0.00022038" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_yaw_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.64706 0.61961 0.58824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_shoulder_yaw_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_arm_shoulder_yaw_joint"
+    type="revolute">
+    <origin
+      xyz="0.0022697 -0.030579 -0.11084"
+      rpy="0 0 0" />
+    <parent
+      link="R_arm_shoulder_roll_Link" />
+    <child
+      link="R_arm_shoulder_yaw_Link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-2.7"
+      upper="2.7"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_arm_elbow_Link">
+    <inertial>
+      <origin
+        xyz="0.012361 -0.0024281 -0.020201"
+        rpy="0 0 0" />
+      <mass
+        value="0.12449" />
+      <inertia
+        ixx="3.6839E-05"
+        ixy="2.2431E-07"
+        ixz="6.0046E-06"
+        iyy="5.1406E-05"
+        iyz="-3.9485E-07"
+        izz="2.8095E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_elbow_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_elbow_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_arm_elbow_joint"
+    type="revolute">
+    <origin
+      xyz="0.00075874 0 -0.061501"
+      rpy="0 0.67 0" />
+    <parent
+      link="R_arm_shoulder_yaw_Link" />
+    <child
+      link="R_arm_elbow_Link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.83"
+      upper="1.83"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_arm_hand_link">
+    <inertial>
+      <origin
+        xyz="-0.040622 -0.00017938 0.051558"
+        rpy="0 0 0" />
+      <mass
+        value="0.17711" />
+      <inertia
+        ixx="0.00010218"
+        ixy="-8.0563E-10"
+        ixz="5.4403E-05"
+        iyy="0.00014502"
+        iyz="-3.7984E-10"
+        izz="7.5996E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_hand_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.29804 0.29804 0.29804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_arm_hand_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_arm_hand_joint"
+    type="fixed">
+    <origin
+      xyz="0.11949 0.00018431 -0.15893"
+      rpy="0 0 0" />
+    <parent
+      link="R_arm_elbow_Link" />
+    <child
+      link="R_arm_hand_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="L_leg_hip_roll_link">
+    <inertial>
+      <origin
+        xyz="-0.019835 0.00022301 -0.06532"
+        rpy="0 0 0" />
+      <mass
+        value="1.2579" />
+      <inertia
+        ixx="0.0020079"
+        ixy="-3.5141E-07"
+        ixz="7.2265E-06"
+        iyy="0.0011587"
+        iyz="4.9847E-06"
+        izz="0.001083" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_roll_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_roll_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_leg_hip_roll_joint"
+    type="revolute">
+    <origin
+      xyz="-0.0058585 0.09 -0.084647"
+      rpy="0 0.7854 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="L_leg_hip_roll_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-0.65"
+      upper="1"
+      effort="90"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_leg_hip_yaw_link">
+    <inertial>
+      <origin
+        xyz="0.08345 -0.017821 0.0020611"
+        rpy="0 0 0" />
+      <mass
+        value="1.8275" />
+      <inertia
+        ixx="0.0017777"
+        ixy="-1.2423E-05"
+        ixz="6.0322E-06"
+        iyy="0.0037167"
+        iyz="4.4058E-06"
+        izz="0.0022868" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_yaw_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_yaw_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_leg_hip_yaw_joint"
+    type="revolute">
+    <origin
+      xyz="0.00095491 0.0012327 -0.085715"
+      rpy="0 0 0" />
+    <parent
+      link="L_leg_hip_roll_link" />
+    <child
+      link="L_leg_hip_yaw_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-0.65"
+      upper="1"
+      effort="90"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_leg_hip_pitch_link">
+    <inertial>
+      <origin
+        xyz="0.019199 0.029105 -0.014069"
+        rpy="0 0 0" />
+      <mass
+        value="2.7631" />
+      <inertia
+        ixx="0.0044391"
+        ixy="0.00023157"
+        ixz="0.0021197"
+        iyy="0.0094566"
+        iyz="-0.00017578"
+        izz="0.0054319" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_pitch_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_hip_pitch_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_leg_hip_pitch_joint"
+    type="revolute">
+    <origin
+      xyz="0.09758 0.016767 0.0021351"
+      rpy="0 0 0" />
+    <parent
+      link="L_leg_hip_yaw_link" />
+    <child
+      link="L_leg_hip_pitch_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.4854"
+      upper="0.7146"
+      effort="150"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_leg_knee_link">
+    <inertial>
+      <origin
+        xyz="-0.043487 0.0051956 -0.06793"
+        rpy="0 0 0" />
+      <mass
+        value="1.4138" />
+      <inertia
+        ixx="0.0021524"
+        ixy="7.1021E-05"
+        ixz="-0.0016116"
+        iyy="0.0041788"
+        iyz="7.8909E-05"
+        izz="0.0022244" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_knee_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_knee_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_leg_knee_joint"
+    type="revolute">
+    <origin
+      xyz="0.14142 0 -0.14142"
+      rpy="0 -1.5707963267948966 0" />
+    <parent
+      link="L_leg_hip_pitch_link" />
+    <child
+      link="L_leg_knee_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="2.15"
+      effort="150"
+      velocity="1000" />
+  </joint>
+  <link
+    name="L_leg_ankle_link">
+    <inertial>
+      <origin
+        xyz="0.019166 4.1335E-07 -0.025831"
+        rpy="0 0 0" />
+      <mass
+        value="0.24025" />
+      <inertia
+        ixx="0.00010457"
+        ixy="-1.5242E-08"
+        ixz="6.5855E-06"
+        iyy="0.0005037"
+        iyz="2.0605E-09"
+        izz="0.00059678" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_ankle_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/l_leg_ankle_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_leg_ankle_joint"
+    type="revolute">
+    <origin
+      xyz="-0.17293 0.001104 -0.19415"
+      rpy="0 0.7853981633974483 0" />
+    <parent
+      link="L_leg_knee_link" />
+    <child
+      link="L_leg_ankle_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.05"
+      upper="0.75"
+      effort="36"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_leg_hip_roll_link">
+    <inertial>
+      <origin
+        xyz="-0.019835 -7.4414E-05 -0.06532"
+        rpy="0 0 0" />
+      <mass
+        value="1.2579" />
+      <inertia
+        ixx="0.0020079"
+        ixy="6.0364E-07"
+        ixz="7.2265E-06"
+        iyy="0.0011587"
+        iyz="-4.9981E-06"
+        izz="0.001083" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_roll_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_roll_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_leg_hip_roll_joint"
+    type="revolute">
+    <origin
+      xyz="-0.0058585 -0.09 -0.084647"
+      rpy="0 0.7854 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="R_leg_hip_roll_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1"
+      upper="0.65"
+      effort="90"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_leg_hip_yaw_link">
+    <inertial>
+      <origin
+        xyz="0.08345 0.017821 0.0020611"
+        rpy="0 0 0" />
+      <mass
+        value="1.8275" />
+      <inertia
+        ixx="0.0017777"
+        ixy="1.2423E-05"
+        ixz="6.0456E-06"
+        iyy="0.0037167"
+        iyz="-4.4073E-06"
+        izz="0.0022868" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_yaw_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_yaw_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_leg_hip_yaw_joint"
+    type="revolute">
+    <origin
+      xyz="0.00095491 -0.0012327 -0.085715"
+      rpy="0 0 0" />
+    <parent
+      link="R_leg_hip_roll_link" />
+    <child
+      link="R_leg_hip_yaw_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1"
+      upper="0.65"
+      effort="90"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_leg_hip_pitch_link">
+    <inertial>
+      <origin
+        xyz="0.016948 -0.029612 -0.011724"
+        rpy="0 0 0" />
+      <mass
+        value="2.7131" />
+      <inertia
+        ixx="0.0044255"
+        ixy="-0.00023157"
+        ixz="0.0021197"
+        iyy="0.0094556"
+        iyz="0.00017578"
+        izz="0.0054183" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_pitch_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_hip_pitch_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_leg_hip_pitch_joint"
+    type="revolute">
+    <origin
+      xyz="0.09758 -0.016767 0.0021351"
+      rpy="0 0 0" />
+    <parent
+      link="R_leg_hip_yaw_link" />
+    <child
+      link="R_leg_hip_pitch_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.4854"
+      upper="0.7146"
+      effort="150"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_leg_knee_link">
+    <inertial>
+      <origin
+        xyz="-0.04349 -0.0051979 -0.067929"
+        rpy="0 0 0" />
+      <mass
+        value="1.414" />
+      <inertia
+        ixx="0.0021525"
+        ixy="-7.1017E-05"
+        ixz="-0.0016116"
+        iyy="0.004179"
+        iyz="-7.89E-05"
+        izz="0.0022245" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_knee_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_knee_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_leg_knee_joint"
+    type="revolute">
+    <origin
+      xyz="0.14142 0 -0.14142"
+      rpy="0 -1.5707963267948966 0" />
+    <parent
+      link="R_leg_hip_pitch_link" />
+    <child
+      link="R_leg_knee_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="2.15"
+      effort="150"
+      velocity="1000" />
+  </joint>
+  <link
+    name="R_leg_ankle_link">
+    <inertial>
+      <origin
+        xyz="0.019165 -7.5094E-07 -0.025831"
+        rpy="0 0 0" />
+      <mass
+        value="0.24025" />
+      <inertia
+        ixx="0.00012262"
+        ixy="1.4839E-06"
+        ixz="3.5187E-06"
+        iyy="0.00091321"
+        iyz="3.6882E-07"
+        izz="0.0010001" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_ankle_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="/home/djh/PHC/phc/data/assets/robot/noetix_n2/meshes/r_leg_ankle_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_leg_ankle_joint"
+    type="revolute">
+    <origin
+      xyz="-0.17293 -0.001104 -0.19415"
+      rpy="0 0.7853981633974483 0" />
+    <parent
+      link="R_leg_knee_link" />
+    <child
+      link="R_leg_ankle_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.05"
+      upper="0.75"
+      effort="36"
+      velocity="1000" />
+  </joint>
+</robot>
