@@ -92,6 +92,17 @@ joint_matches:
   - ["L_toe_link", "L_Toe"]
   - ["R_toe_link", "R_Toe"]
 
+smpl_joints_matches:
+  - ["L_arm_hand_Link", "L_Hand"]
+  - ["R_arm_hand_Link", "R_Hand"]
+  - ["L_arm_elbow_Link", "L_Elbow"]
+  - ["R_arm_elbow_Link", "R_Elbow"]
+  - ["base_link", "Pelvis"]
+  - ["L_leg_ankle_link", "L_Ankle"]
+  - ["R_leg_ankle_link", "R_Ankle"]
+  - ["L_leg_knee_link", "L_Knee"]
+  - ["R_leg_knee_link", "R_Knee"]
+
 
 smpl_pose_modifier:
   - Pelvis: "[np.pi/2, 0, np.pi/2]"

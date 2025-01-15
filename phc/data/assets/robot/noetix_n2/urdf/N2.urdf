@@ -4,18 +4,6 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
   name="N2">
-  <!-- <link name="floor" />
-  <joint
-    name="floor_2_base"
-    type="revolute">
-    <origin
-      xyz="0 0 0"
-      rpy="0 0 0" />
-    <parent
-      link="floor" />
-    <child
-      link="base_link" />
-  </joint> -->
   <link
     name="base_link">
     <inertial>
@@ -341,8 +329,8 @@
     <axis
       xyz="0 0 0" />
     <limit
-      lower="0"
-      upper="0"
+      lower="0.0"
+      upper="0.0"
       effort="36"
       velocity="1000" />
   </joint>
@@ -579,7 +567,7 @@
       velocity="1000" />
   </joint>
   <link
-    name="R_arm_hand_link">
+    name="R_arm_hand_Link">
     <inertial>
       <origin
         xyz="-0.040622 -0.00017938 0.051558"
@@ -627,9 +615,14 @@
     <parent
       link="R_arm_elbow_Link" />
     <child
-      link="R_arm_hand_link" />
+      link="R_arm_hand_Link" />
     <axis
       xyz="0 0 0" />
+    <limit
+      lower="0.0"
+      upper="0.0"
+      effort="36"
+      velocity="1000" />
   </joint>
   <link
     name="L_leg_hip_roll_link">

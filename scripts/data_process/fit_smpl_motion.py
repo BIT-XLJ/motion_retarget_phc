@@ -25,10 +25,20 @@ from torch.autograd import Variable
 from tqdm import tqdm
 from smpl_sim.smpllib.smpl_joint_names import SMPL_MUJOCO_NAMES, SMPL_BONE_ORDER_NAMES, SMPLH_BONE_ORDER_NAMES, SMPLH_MUJOCO_NAMES
 from phc.utils.torch_humanoid_batch import Humanoid_Batch
-from smpl_sim.utils.smoothing_utils import gaussian_kernel_1d, gaussian_filter_1d_batch
 from easydict import EasyDict
 import hydra
 from omegaconf import DictConfig, OmegaConf
+import casadi                                                                       
+import meshcat.geometry as mg
+import time
+import pinocchio as pin   
+from pinocchio import casadi as cpin                
+from pinocchio.robot_wrapper import RobotWrapper    
+from pinocchio.visualize import MeshcatVisualizer  
+parent2_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(parent2_dir)
+
+from weighted_moving_filter import WeightedMovingFilter
 
 def load_amass_data(data_path):
     entry_data = dict(np.load(open(data_path, "rb"), allow_pickle=True))
@@ -36,7 +46,6 @@ def load_amass_data(data_path):
     if not 'mocap_framerate' in  entry_data:
         return 
     framerate = entry_data['mocap_framerate']
-
 
     root_trans = entry_data['trans']
     pose_aa = np.concatenate([entry_data['poses'][:, :66], np.zeros((root_trans.shape[0], 6))], axis = -1)
@@ -52,21 +61,9 @@ def load_amass_data(data_path):
     }
     
 def process_motion(key_names, key_name_to_pkls, cfg):
-    device = torch.device("cpu")
-    
-    humanoid_fk = Humanoid_Batch(cfg.robot) # load forward kinematics model
-    num_augment_joint = len(cfg.robot.extend_config)
-
-    #### Define corresonpdances between h1 and smpl joints
-    robot_joint_names_augment = humanoid_fk.body_names_augment 
-    robot_joint_pick = [i[0] for i in cfg.robot.joint_matches]
-    smpl_joint_pick = [i[1] for i in cfg.robot.joint_matches]
-    robot_joint_pick_idx = [robot_joint_names_augment.index(j) for j in robot_joint_pick]
-    smpl_joint_pick_idx = [SMPL_BONE_ORDER_NAMES.index(j) for j in smpl_joint_pick]
     
     smpl_parser_n = SMPL_Parser(model_path="data/smpl", gender="neutral")
     shape_new, scale = joblib.load(f"data/{cfg.robot.humanoid_type}/shape_optimized_v1.pkl") # TODO: run fit_smple_shape to get this
-    
     
     all_data = {}
     pbar = tqdm(key_names, position=0, leave=True)
@@ -76,121 +73,255 @@ def process_motion(key_names, key_name_to_pkls, cfg):
         print("--------------------------------------")
         amass_data = load_amass_data(key_name_to_pkls[data_key])
         if amass_data is None: continue
-        skip = int(amass_data['fps']//30)
-        trans = torch.from_numpy(amass_data['trans'][::skip])
-        N = trans.shape[0]
+        skip = int(amass_data['fps']//60)
+        trans = torch.from_numpy(amass_data['trans'][::skip])  #::skip是切片，
         pose_aa_walk = torch.from_numpy(amass_data['pose_aa'][::skip]).float()
         
-        if N < 10:
-            print("to short")
-            continue
-
-        with torch.no_grad():
-            verts, joints = smpl_parser_n.get_joints_verts(pose_aa_walk, shape_new, trans)
-            root_pos = joints[:, 0:1]
-            joints = (joints - joints[:, 0:1]) * scale.detach() + root_pos
+        verts, joints = smpl_parser_n.get_joints_verts(pose_aa_walk, shape_new, trans)
+        root_pos = joints[:, 0:1] #joints代表的是关节的位置数据
+        joints = (joints - joints[:, 0:1]) * scale.detach() + root_pos
         joints[..., 2] -= verts[0, :, 2].min().item()
         
-            
-        offset = joints[:, 0] - trans
-        root_trans_offset = (trans + offset).clone()
-
-
-
-        gt_root_rot_quat = torch.from_numpy((sRot.from_rotvec(pose_aa_walk[:, :3]) * sRot.from_quat([0.5, 0.5, 0.5, 0.5]).inv()).as_quat()).float() # can't directly use this 
-        gt_root_rot = torch.from_numpy(sRot.from_quat(torch_utils.calc_heading_quat(gt_root_rot_quat)).as_rotvec()).float() # so only use the heading. 
+        N = joints.shape[0]
         
-        # def dof_to_pose_aa(dof_pos):
-        dof_pos = torch.zeros((1, N, humanoid_fk.num_dof, 1))
-
-        dof_pos_new = Variable(dof_pos.clone(), requires_grad=True)
-        root_rot_new = Variable(gt_root_rot.clone(), requires_grad=True)
-        root_pos_offset = Variable(torch.zeros(1, 3), requires_grad=True)
-        # optimizer_pose = torch.optim.Adam([dof_pos_new],lr=0.01)
-        # optimizer_root = torch.optim.Adam([root_rot_new, root_pos_offset],lr=0.01)
-        optimizer = torch.optim.Adam([dof_pos_new, root_rot_new, root_pos_offset],lr=0.02)
-
-
-        kernel_size = 5  # Size of the Gaussian kernel
-        sigma = 0.75  # Standard deviation of the Gaussian kernel
-        B, T, J, D = dof_pos_new.shape    
-
+        rotation_matrices = sRot.from_rotvec(pose_aa_walk[:, :3]).as_matrix()
         
-        for iteration in range(cfg.get("fitting_iterations", 500)):
-            pose_aa_h1_new = torch.cat([root_rot_new[None, :, None], humanoid_fk.dof_axis * dof_pos_new, torch.zeros((1, N, num_augment_joint, 3)).to(device)], axis = 2)
-            fk_return = humanoid_fk.fk_batch(pose_aa_h1_new, root_trans_offset[None, ] + root_pos_offset )
-            
-            
-            if num_augment_joint > 0:
-                diff = fk_return.global_translation_extend[:, :, robot_joint_pick_idx] - joints[:, smpl_joint_pick_idx]
-            else:
-                diff = fk_return.global_translation[:, :, robot_joint_pick_idx] - joints[:, smpl_joint_pick_idx]
+        homogeneous_matrices = np.zeros((N, 4, 4))
+        homogeneous_matrices[:, :3, :3] = rotation_matrices
+        homogeneous_matrices[:, :3, 3] = root_pos[:, 0, :]
+        homogeneous_matrices[:, 3, 3] = 1
+        
+        all_data[data_key] = {
+            "root_homogeneous_matrices": homogeneous_matrices, 
+            "joints_translations": joints
+        }
+    return all_data        
+        
+
+    
+class RobotIK:
+    def __init__(self, Visualization = False):
+        np.set_printoptions(precision=5, suppress=True, linewidth=200)
+
+        self.Visualization = Visualization
+        
+        self.joint_model = pin.JointModelComposite()
+        # 添加 3 个平移自由度
+        self.joint_model.addJoint(pin.JointModelTranslation())
+
+        # 添加 3 个旋转自由度 (roll, pitch, yaw)
+        self.joint_model.addJoint(pin.JointModelRX())  # Roll
+        self.joint_model.addJoint(pin.JointModelRY())  # Pitch
+        self.joint_model.addJoint(pin.JointModelRZ())  # Yaw
+
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        urdf_path = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf', 'N2.urdf')
+        urdf_dirs = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf')
+        self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path,
+                                                    root_joint = self.joint_model,
+                                                    package_dirs = urdf_dirs)
+
+        self.mixed_jointsToLockIDs =[]
+        self.reduced_robot = self.robot.buildReducedRobot(
+            list_of_joints_to_lock=self.mixed_jointsToLockIDs,
+            reference_configuration=np.array([0.0] * self.robot.model.nq),
+        )
+        
+        # Creating Casadi models and data for symbolic computing
+        self.cmodel = cpin.Model(self.reduced_robot.model)
+        self.cdata = self.cmodel.createData()
+        print("输出pinocchio关节顺序")
+        print(self.cmodel)
+        
+        # Creating symbolic variables
+        self.cq = casadi.SX.sym("q", self.reduced_robot.model.nq, 1)
+        self.cTf_lhand = casadi.SX.sym("tf_lhand", 3, 1) #only consider about transform, not included rotation
+        self.cTf_rhand = casadi.SX.sym("tf_rhand", 3, 1)
+        self.cTf_lelbow = casadi.SX.sym("tf_lelbow", 3, 1)
+        self.cTf_relbow = casadi.SX.sym("tf_relbow", 3, 1)            
+        self.cTf_root  = casadi.SX.sym("tf_root" , 4, 4)
+        self.cTf_lfoot = casadi.SX.sym("tf_lfoot", 3, 1)
+        self.cTf_rfoot = casadi.SX.sym("tf_rfoot", 3, 1)
+        self.cTf_lknee = casadi.SX.sym("tf_lknee", 3, 1)
+        self.cTf_rknee = casadi.SX.sym("tf_rknee", 3, 1)
+           
+        cpin.framesForwardKinematics(self.cmodel, self.cdata, self.cq)
+
+        # Get the hand joint ID and define the error function
+        self.lhand_id = self.reduced_robot.model.getFrameId("L_arm_hand_Link")
+        self.rhand_id = self.reduced_robot.model.getFrameId("R_arm_hand_Link")
+        self.lelbow_id = self.reduced_robot.model.getFrameId("L_arm_elbow_Link")
+        self.relbow_id = self.reduced_robot.model.getFrameId("R_arm_elbow_Link")        
+        self.root_id = self.reduced_robot.model.getFrameId("base_link") # pelvis
+        self.lfoot_id = self.reduced_robot.model.getFrameId("L_leg_ankle_link")
+        self.rfoot_id = self.reduced_robot.model.getFrameId("R_leg_ankle_link")
+        self.lknee_id = self.reduced_robot.model.getFrameId("L_leg_knee_link")
+        self.rknee_id = self.reduced_robot.model.getFrameId("R_leg_knee_link")        
+        
+        self.translational_error = casadi.Function(
+            "translational_error",
+            [self.cq, self.cTf_lhand, self.cTf_rhand, self.cTf_lelbow, self.cTf_relbow, self.cTf_root, self.cTf_lfoot, self.cTf_rfoot, self.cTf_lknee, self.cTf_rknee],
+            [
+                casadi.vertcat(
+                    self.cdata.oMf[self.lhand_id].translation - self.cTf_lhand,
+                    self.cdata.oMf[self.rhand_id].translation - self.cTf_rhand,
+                    self.cdata.oMf[self.lelbow_id].translation - self.cTf_lelbow,
+                    self.cdata.oMf[self.relbow_id].translation - self.cTf_relbow,  
+                    self.cdata.oMf[self.root_id].translation - self.cTf_root[:3,3],
+                    self.cdata.oMf[self.lfoot_id].translation - self.cTf_lfoot,
+                    self.cdata.oMf[self.rfoot_id].translation - self.cTf_rfoot,
+                    self.cdata.oMf[self.lknee_id].translation - self.cTf_lknee,
+                    self.cdata.oMf[self.rknee_id].translation - self.cTf_rknee,                    
+                )
+            ],
+        )
+        self.rotational_error = casadi.Function(
+            "rotational_error",
+            [self.cq, self.cTf_root],
+            [
+                casadi.vertcat(
+                    cpin.log3(self.cdata.oMf[self.root_id].rotation @ self.cTf_root[:3,:3].T),
+                )
+            ],
+        )
+
+        # Defining the optimization problem
+        self.opti = casadi.Opti()
+        self.var_q = self.opti.variable(self.reduced_robot.model.nq)
+        self.var_q_last = self.opti.parameter(self.reduced_robot.model.nq)   # for smooth
+        self.param_tf_lhand = self.opti.parameter(3, 1)
+        self.param_tf_rhand = self.opti.parameter(3, 1)
+        self.param_tf_lelbow = self.opti.parameter(3, 1)
+        self.param_tf_relbow = self.opti.parameter(3, 1)        
+        self.param_tf_root = self.opti.parameter(4, 4)
+        self.param_tf_lfoot = self.opti.parameter(3, 1)
+        self.param_tf_rfoot = self.opti.parameter(3, 1)
+        self.param_tf_lknee = self.opti.parameter(3, 1)
+        self.param_tf_rknee = self.opti.parameter(3, 1)
                 
-            loss_g = diff.norm(dim = -1).mean() + 0.01 * torch.mean(torch.square(dof_pos_new))
-            loss = loss_g
-            
-            optimizer.zero_grad()
-            # optimizer_pose.zero_grad()
-            # optimizer_root.zero_grad()
-            loss.backward()
-            optimizer.step()
-            # optimizer_pose.step()
-            # optimizer_root.step()
-            
-            dof_pos_new.data.clamp_(humanoid_fk.joints_range[:, 0, None], humanoid_fk.joints_range[:, 1, None])
+        self.translational_cost = casadi.sumsqr(self.translational_error(self.var_q, self.param_tf_lhand, self.param_tf_rhand, self.param_tf_lelbow, self.param_tf_relbow, self.param_tf_root, self.param_tf_lfoot, self.param_tf_rfoot, self.param_tf_lknee, self.param_tf_rknee))
+        self.rotation_cost = casadi.sumsqr(self.rotational_error(self.var_q, self.param_tf_root))
+        self.regularization_cost = casadi.sumsqr(self.var_q)
+        self.smooth_cost = casadi.sumsqr(self.var_q - self.var_q_last)
 
-            pbar.set_description_str(f"{data_key}-Iter: {iteration} \t {loss.item() * 1000:.3f}")
-            dof_pos_new.data = gaussian_filter_1d_batch(dof_pos_new.squeeze().transpose(1, 0)[None, ], kernel_size, sigma).transpose(2, 1)[..., None]
-            
-            # from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-            # import matplotlib.pyplot as plt
-            
-            # j3d = fk_return.global_translation[0, :, :, :].detach().numpy()
-            # j3d_joints = joints.detach().numpy()
-            # idx = 0
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111, projection='3d')
-            # ax.view_init(90, 0)
-            # ax.scatter(j3d[idx, :,0], j3d[idx, :,1], j3d[idx, :,2])
-            # ax.scatter(j3d_joints[idx, :,0], j3d_joints[idx, :,1], j3d_joints[idx, :,2])
+        # Setting optimization constraints and goals
+        self.opti.subject_to(self.opti.bounded(
+            self.reduced_robot.model.lowerPositionLimit,
+            self.var_q,
+            self.reduced_robot.model.upperPositionLimit)
+        )
+        self.opti.minimize(50 * self.translational_cost + self.rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost)
 
-            # ax.set_xlabel('X Label')
-            # ax.set_ylabel('Y Label')
-            # ax.set_zlabel('Z Label')
-            # drange = 1
-            # ax.set_xlim(-drange, drange)
-            # ax.set_ylim(-drange, drange)
-            # ax.set_zlim(-drange, drange)
-            # plt.show()
-            
-        dof_pos_new.data.clamp_(humanoid_fk.joints_range[:, 0, None], humanoid_fk.joints_range[:, 1, None])
-        pose_aa_h1_new = torch.cat([root_rot_new[None, :, None], humanoid_fk.dof_axis * dof_pos_new, torch.zeros((1, N, num_augment_joint, 3)).to(device)], axis = 2)
+        opts = {
+            'ipopt':{
+                'print_level':0,
+                'max_iter':50,
+                'tol':1e-3
+            },
+            'print_time':False,# print or not
+            'calc_lam_p':False 
+        }
+        self.opti.solver("ipopt", opts)
 
-        root_trans_offset_dump = (root_trans_offset + root_pos_offset ).clone()
+        self.init_data = np.zeros(self.reduced_robot.model.nq)
+        self.smooth_filter = WeightedMovingFilter(np.array([0.4, 0.3, 0.2, 0.1]), self.reduced_robot.model.nq)
+        self.vis = None
 
-        # move to ground
-        # 1.using the lowest body pos in motion
-        # height_diff = fk_return.global_translation[..., 2].min().item() 
+        if self.Visualization:
+            # Initialize the Meshcat visualizer for visualization
+            self.vis = MeshcatVisualizer(self.reduced_robot.model, self.reduced_robot.collision_model, self.reduced_robot.visual_model)
+            self.vis.initViewer(open=True) 
+            self.vis.loadViewerModel("pinocchio") 
+            self.vis.displayFrames(True, frame_ids=[101, 102], axis_length = 0.15, axis_width = 5)
+            self.vis.display(pin.neutral(self.reduced_robot.model))
 
-        # 2.using the lowest point of mesh in motion
-        combined_mesh = humanoid_fk.mesh_fk(pose_aa_h1_new[:, :1].detach(), root_trans_offset_dump[None, :1].detach())
-        height_diff = np.asarray(combined_mesh.vertices)[..., 2].min()
-        
-        root_trans_offset_dump[..., 2] -= height_diff
-        joints_dump = joints.numpy().copy()
-        joints_dump[..., 2] -= height_diff
-        
-        data_dump = {
-                    "root_trans_offset": root_trans_offset_dump.squeeze().detach().numpy(),
-                    "pose_aa": pose_aa_h1_new.squeeze().detach().numpy(),    #pose_aa的意义是什么
-                    "dof": dof_pos_new.squeeze().detach().numpy(), 
-                    "root_rot": sRot.from_rotvec(root_rot_new.detach().numpy()).as_quat(),
-                    "smpl_joints": joints_dump, 
-                    "fps": 30
-                    }
-        all_data[data_key] = data_dump
-    return all_data
-        
+            # Enable the display of end effector target frames with short axis lengths and greater width.
+            frame_viz_names = ['lhand_target', 'rhand_target', 'lfoot_target', 'rfoot_target', 'root_target', 'lelbow_target', 'relbow_target', 'lknee_target', 'rknee_target']
+            FRAME_AXIS_POSITIONS = (
+                np.array([[0, 0, 0], [1, 0, 0],
+                          [0, 0, 0], [0, 1, 0],
+                          [0, 0, 0], [0, 0, 1]]).astype(np.float32).T
+            )
+            FRAME_AXIS_COLORS = (
+                np.array([[1, 0, 0], [1, 0.6, 0],
+                          [0, 1, 0], [0.6, 1, 0],
+                          [0, 0, 1], [0, 0.6, 1]]).astype(np.float32).T
+            )
+            axis_length = 0.1
+            axis_width = 10
+            for frame_viz_name in frame_viz_names:
+                self.vis.viewer[frame_viz_name].set_object(
+                    mg.LineSegments(
+                        mg.PointsGeometry(
+                            position=axis_length * FRAME_AXIS_POSITIONS,
+                            color=FRAME_AXIS_COLORS,
+                        ),
+                        mg.LineBasicMaterial(
+                            linewidth=axis_width,
+                            vertexColors=True,
+                        ),
+                    )
+                )
+
+    def solve_ik(self, left_hand, right_hand, left_elbow, right_elbow, root, left_foot, right_foot, left_knee, right_knee, current_lr_arm_motor_q = None, current_lr_arm_motor_dq = None):
+        if current_lr_arm_motor_q is not None:
+            self.init_data = current_lr_arm_motor_q
+        self.opti.set_initial(self.var_q, self.init_data)
+
+        # if self.Visualization:
+        #     self.vis.viewer['lhand_target'].set_transform(left_hand)   # for visualization
+        #     self.vis.viewer['rhand_target'].set_transform(right_hand)  # for visualization
+        #     self.vis.viewer['lfoot_target'].set_transform(left_foot)   # for visualization
+        #     self.vis.viewer['rfoot_target'].set_transform(right_foot)  # for visualization
+        #     self.vis.viewer['root_target'].set_transform(root)         # for visualization
+        #     self.vis.viewer['lelbow_target'].set_transform(left_elbow)       # for visualization
+        #     self.vis.viewer['relbow_target'].set_transform(right_elbow)       # for visualization
+        #     self.vis.viewer['lknee_target'].set_transform(left_knee)        # for visualization
+        #     self.vis.viewer['rknee_target'].set_transform(right_knee)        # for visualization
+
+        self.opti.set_value(self.param_tf_lhand, left_hand)
+        self.opti.set_value(self.param_tf_rhand, right_hand)
+        self.opti.set_value(self.param_tf_lfoot, left_foot)
+        self.opti.set_value(self.param_tf_rfoot, right_foot)
+        self.opti.set_value(self.param_tf_root, root)
+        self.opti.set_value(self.param_tf_lelbow, left_elbow)
+        self.opti.set_value(self.param_tf_relbow, right_elbow)
+        self.opti.set_value(self.param_tf_lknee, left_knee)
+        self.opti.set_value(self.param_tf_rknee, right_knee)
+
+        self.opti.set_value(self.var_q_last, self.init_data) # for smooth
+
+        try:
+            sol = self.opti.solve()
+            sol_q = self.opti.value(self.var_q)
+            self.smooth_filter.add_data(sol_q)
+            sol_q = self.smooth_filter.filtered_data
+
+            if current_lr_arm_motor_dq is not None:
+                v = current_lr_arm_motor_dq * 0.0
+            else:
+                v = (sol_q - self.init_data) * 0.0
+            self.init_data = sol_q
+            if self.Visualization:
+                self.vis.display(sol_q)  # for visualization
+            return sol_q
+
+        except Exception as e:
+            print(f"ERROR in convergence, plotting debug info.{e}")
+            sol_q = self.opti.debug.value(self.var_q)
+            self.smooth_filter.add_data(sol_q)
+            sol_q = self.smooth_filter.filtered_data
+            if current_lr_arm_motor_dq is not None:
+                v = current_lr_arm_motor_dq * 0.0
+            else:
+                v = (sol_q - self.init_data) * 0.0
+            self.init_data = sol_q
+            print(f"sol_q:{sol_q} \nmotorstate: \n{current_lr_arm_motor_q} \nleft_pose: \n{left_hand} \nright_pose: \n{right_hand}")
+            if self.Visualization:
+                self.vis.display(sol_q)  # for visualization
+            # return sol_q, sol_tauff
+            return current_lr_arm_motor_q        
+
 
 @hydra.main(version_base=None, config_path="../../phc/data/cfg", config_name="config")
 def main(cfg : DictConfig) -> None:
@@ -206,8 +337,6 @@ def main(cfg : DictConfig) -> None:
     print("key_names-------------------")
     print(key_names)
     print("---------------------------")
-    # if not cfg.get("fit_all", False):
-    #     key_names = ["0-Transitions_mocap_mazen_c3d_dance_stand_poses"]
     
     from multiprocessing import Pool
     jobs = key_names
@@ -227,7 +356,7 @@ def main(cfg : DictConfig) -> None:
         all_data = {}
         for data_dict in all_data_list:
             all_data.update(data_dict)
-    # import ipdb; ipdb.set_trace()
+    
     if len(all_data) == 1:
         data_key = list(all_data.keys())[0]
         os.makedirs(f"data/{cfg.robot.humanoid_type}/v1/singles", exist_ok=True)
@@ -237,8 +366,48 @@ def main(cfg : DictConfig) -> None:
     else:
         os.makedirs(f"data/{cfg.robot.humanoid_type}/v1/", exist_ok=True)
         joblib.dump(all_data, f"data/{cfg.robot.humanoid_type}/v1/amass_all.pkl")
+     
+    smpl_joint_pick = [i[1] for i in cfg.robot.smpl_joints_matches]
+    smpl_joint_pick_idx = [SMPL_BONE_ORDER_NAMES.index(j) for j in smpl_joint_pick]
     
+    # print("smpl_joint_pick_idx")
+    # print(smpl_joint_pick_idx)
+    
+    
+    robot_ik = RobotIK(Visualization = True)
+    
+    # print(all_data)
+    
+    for data_key, data_value in all_data.items():
+        root_tf = data_value["root_homogeneous_matrices"]
+        joints_pos = data_value["joints_translations"]
 
-
+    print(joints_pos[0,smpl_joint_pick_idx[0]].view(3,1).numpy())
+    print(root_tf.shape)
+    sol_q_last = np.zeros(24)
+    sol_q_last[12] = -0.1        #赋一个初始值,注意这里的顺序要和pinocchio动力学库的关节顺序保持一致
+    sol_q_last[13] = 0.3
+    sol_q_last[14] = -0.2
+    sol_q_last[21] = -0.1
+    sol_q_last[22] = 0.3
+    sol_q_last[23] = -0.2
+    
+    motion_num = root_tf.shape[0]
+    print(motion_num)
+    
+    for i in range(motion_num):
+        sol_q = robot_ik.solve_ik(joints_pos[i,smpl_joint_pick_idx[0]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[1]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[2]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[3]].view(3,1).numpy(),
+                                  root_tf[i],
+                                  joints_pos[i,smpl_joint_pick_idx[5]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[6]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[7]].view(3,1).numpy(),
+                                  joints_pos[i,smpl_joint_pick_idx[8]].view(3,1).numpy(),
+                                  current_lr_arm_motor_q=sol_q_last
+                                )
+        sol_q_last = sol_q
+        
 if __name__ == "__main__":
     main()
