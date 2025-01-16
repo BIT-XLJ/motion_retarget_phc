@@ -1,44 +1,47 @@
 import glob
 import os
 import sys
-import pdb
-import os.path as osp
-sys.path.append(os.getcwd())
-
-from smpl_sim.utils import torch_utils
-from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree, SkeletonMotion, SkeletonState
 from scipy.spatial.transform import Rotation as sRot
 import numpy as np
 import torch
-from smpl_sim.smpllib.smpl_parser import (
-    SMPL_Parser,
-    SMPLH_Parser,
-    SMPLX_Parser, 
-)
-
+from smpl_sim.smpllib.smpl_parser import SMPL_Parser
 import joblib
-import torch
-import torch.nn.functional as F
-import math
-from smpl_sim.utils.pytorch3d_transforms import axis_angle_to_matrix
-from torch.autograd import Variable
 from tqdm import tqdm
-from smpl_sim.smpllib.smpl_joint_names import SMPL_MUJOCO_NAMES, SMPL_BONE_ORDER_NAMES, SMPLH_BONE_ORDER_NAMES, SMPLH_MUJOCO_NAMES
-from phc.utils.torch_humanoid_batch import Humanoid_Batch
+from smpl_sim.smpllib.smpl_joint_names import SMPL_BONE_ORDER_NAMES
 from easydict import EasyDict
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import casadi                                                                       
 import meshcat.geometry as mg
-import time
 import pinocchio as pin   
-from pinocchio import casadi as cpin                
-from pinocchio.robot_wrapper import RobotWrapper    
+from pinocchio import casadi as cpin                   
 from pinocchio.visualize import MeshcatVisualizer  
+from weighted_moving_filter import WeightedMovingFilter
+
+sys.path.append(os.getcwd())
 parent2_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(parent2_dir)
 
-from weighted_moving_filter import WeightedMovingFilter
+def rotx(theta):
+    theta = np.radians(theta) 
+    Rx = np.array([[1, 0, 0],
+               [0, np.cos(theta), -np.sin(theta)],
+               [0, np.sin(theta), np.cos(theta)]])
+    return Rx
+    
+def roty(theta):
+    theta = np.radians(theta) 
+    Ry = np.array([[np.cos(theta), 0, np.sin(theta)],
+               [0, 1, 0],
+               [-np.sin(theta), 0, np.cos(theta)]])
+    return Ry
+    
+def rotz(theta):
+    theta = np.radians(theta)
+    Rz = np.array([[np.cos(theta), -np.sin(theta), 0],
+               [np.sin(theta), np.cos(theta), 0],
+               [0, 0, 1]])
+    return Rz
 
 def load_amass_data(data_path):
     entry_data = dict(np.load(open(data_path, "rb"), allow_pickle=True))
@@ -80,21 +83,35 @@ def process_motion(key_names, key_name_to_pkls, cfg):
         verts, joints = smpl_parser_n.get_joints_verts(pose_aa_walk, shape_new, trans)
         root_pos = joints[:, 0:1] #joints代表的是关节的位置数据
         joints = (joints - joints[:, 0:1]) * scale.detach() + root_pos
-        joints[..., 2] -= verts[0, :, 2].min().item()
+        joints[..., 2] = joints[..., 2] - verts[0, :, 2].min().item() - 0.7
         
         N = joints.shape[0]
-        
-        rotation_matrices = sRot.from_rotvec(pose_aa_walk[:, :3]).as_matrix()
-        
-        homogeneous_matrices = np.zeros((N, 4, 4))
-        homogeneous_matrices[:, :3, :3] = rotation_matrices
-        homogeneous_matrices[:, :3, 3] = root_pos[:, 0, :]
-        homogeneous_matrices[:, 3, 3] = 1
+        link_homogeneous_tf = np.zeros((np.int32(pose_aa_walk.shape[1]/3), N, 4, 4))
+        for i in range(np.int32(pose_aa_walk.shape[1]/3)):
+            rotation_matrices = sRot.from_rotvec(pose_aa_walk[:, i:i+3]).as_matrix()
+            homogeneous_matrices = np.zeros((N, 4, 4))
+            
+            if i == 0:
+                root_matrix = rotation_matrices @ rotx(-90) @ rotz(-90)
+                rot = sRot.from_matrix(root_matrix)
+                euler_angles = rot.as_euler('ZYX', degrees=False)
+                yaw_only_euler = np.zeros_like(euler_angles)
+                yaw_only_euler[:, 0] = euler_angles[:, 0]
+                yaw_only_rotation = sRot.from_euler('ZYX', yaw_only_euler, degrees=False)
+                yaw_only_matrices = yaw_only_rotation.as_matrix()
+                homogeneous_matrices[:, :3, :3] = yaw_only_matrices   #only consider about yaw
+            else:
+                homogeneous_matrices[:, :3, :3] = root_matrix @ rotation_matrices
+                
+            homogeneous_matrices[:, :3, 3] = joints[:, i, :]
+            homogeneous_matrices[:, 3, 3] = 1
+            link_homogeneous_tf[i,:,:,:] = homogeneous_matrices
+            # print(rotation_matrices)
         
         all_data[data_key] = {
-            "root_homogeneous_matrices": homogeneous_matrices, 
-            "joints_translations": joints
+            "link_homogeneous_tf": link_homogeneous_tf,
         }
+            
     return all_data        
         
 
@@ -130,20 +147,20 @@ class RobotIK:
         # Creating Casadi models and data for symbolic computing
         self.cmodel = cpin.Model(self.reduced_robot.model)
         self.cdata = self.cmodel.createData()
-        print("输出pinocchio关节顺序")
-        print(self.cmodel)
+        # print("输出pinocchio关节顺序")
+        # print(self.cmodel)
         
         # Creating symbolic variables
         self.cq = casadi.SX.sym("q", self.reduced_robot.model.nq, 1)
-        self.cTf_lhand = casadi.SX.sym("tf_lhand", 3, 1) #only consider about transform, not included rotation
-        self.cTf_rhand = casadi.SX.sym("tf_rhand", 3, 1)
-        self.cTf_lelbow = casadi.SX.sym("tf_lelbow", 3, 1)
-        self.cTf_relbow = casadi.SX.sym("tf_relbow", 3, 1)            
+        self.cTf_lhand = casadi.SX.sym("tf_lhand", 4, 4) #only consider about transform, not included rotation
+        self.cTf_rhand = casadi.SX.sym("tf_rhand", 4, 4)
+        self.cTf_lelbow = casadi.SX.sym("tf_lelbow", 4, 4)
+        self.cTf_relbow = casadi.SX.sym("tf_relbow", 4, 4)            
         self.cTf_root  = casadi.SX.sym("tf_root" , 4, 4)
-        self.cTf_lfoot = casadi.SX.sym("tf_lfoot", 3, 1)
-        self.cTf_rfoot = casadi.SX.sym("tf_rfoot", 3, 1)
-        self.cTf_lknee = casadi.SX.sym("tf_lknee", 3, 1)
-        self.cTf_rknee = casadi.SX.sym("tf_rknee", 3, 1)
+        self.cTf_lfoot = casadi.SX.sym("tf_lfoot", 4, 4)
+        self.cTf_rfoot = casadi.SX.sym("tf_rfoot", 4, 4)
+        self.cTf_lknee = casadi.SX.sym("tf_lknee", 4, 4)
+        self.cTf_rknee = casadi.SX.sym("tf_rknee", 4, 4)
            
         cpin.framesForwardKinematics(self.cmodel, self.cdata, self.cq)
 
@@ -158,49 +175,178 @@ class RobotIK:
         self.lknee_id = self.reduced_robot.model.getFrameId("L_leg_knee_link")
         self.rknee_id = self.reduced_robot.model.getFrameId("R_leg_knee_link")        
         
-        self.translational_error = casadi.Function(
-            "translational_error",
-            [self.cq, self.cTf_lhand, self.cTf_rhand, self.cTf_lelbow, self.cTf_relbow, self.cTf_root, self.cTf_lfoot, self.cTf_rfoot, self.cTf_lknee, self.cTf_rknee],
+        # self.translational_error = casadi.Function(
+        #     "translational_error",
+        #     [self.cq, self.cTf_lhand, self.cTf_rhand, self.cTf_lelbow, self.cTf_relbow, self.cTf_root, self.cTf_lfoot, self.cTf_rfoot, self.cTf_lknee, self.cTf_rknee],
+        #     [
+        #         casadi.vertcat(
+        #             self.cdata.oMf[self.lhand_id].translation - self.cTf_lhand[:3,3],
+        #             self.cdata.oMf[self.rhand_id].translation - self.cTf_rhand[:3,3],
+        #             self.cdata.oMf[self.lelbow_id].translation - self.cTf_lelbow[:3,3],
+        #             self.cdata.oMf[self.relbow_id].translation - self.cTf_relbow[:3,3],  
+        #             self.cdata.oMf[self.root_id].translation - self.cTf_root[:3,3],
+        #             self.cdata.oMf[self.lfoot_id].translation - self.cTf_lfoot[:3,3],
+        #             self.cdata.oMf[self.rfoot_id].translation - self.cTf_rfoot[:3,3],
+        #             self.cdata.oMf[self.lknee_id].translation - self.cTf_lknee[:3,3],
+        #             self.cdata.oMf[self.rknee_id].translation - self.cTf_rknee[:3,3],                    
+        #         )
+        #     ],
+        # )
+        
+        self.hand_translational_error = casadi.Function(
+            "hand_translational_error",
+            [self.cq, self.cTf_lhand, self.cTf_rhand],
             [
                 casadi.vertcat(
-                    self.cdata.oMf[self.lhand_id].translation - self.cTf_lhand,
-                    self.cdata.oMf[self.rhand_id].translation - self.cTf_rhand,
-                    self.cdata.oMf[self.lelbow_id].translation - self.cTf_lelbow,
-                    self.cdata.oMf[self.relbow_id].translation - self.cTf_relbow,  
-                    self.cdata.oMf[self.root_id].translation - self.cTf_root[:3,3],
-                    self.cdata.oMf[self.lfoot_id].translation - self.cTf_lfoot,
-                    self.cdata.oMf[self.rfoot_id].translation - self.cTf_rfoot,
-                    self.cdata.oMf[self.lknee_id].translation - self.cTf_lknee,
-                    self.cdata.oMf[self.rknee_id].translation - self.cTf_rknee,                    
+                    self.cdata.oMf[self.lhand_id].translation - self.cTf_lhand[:3,3],
+                    self.cdata.oMf[self.rhand_id].translation - self.cTf_rhand[:3,3],                   
                 )
             ],
-        )
-        self.rotational_error = casadi.Function(
-            "rotational_error",
-            [self.cq, self.cTf_root],
+        )        
+
+        self.elbow_translational_error = casadi.Function(
+            "elbow_translational_error",
+            [self.cq, self.cTf_lelbow, self.cTf_relbow],
             [
                 casadi.vertcat(
-                    cpin.log3(self.cdata.oMf[self.root_id].rotation @ self.cTf_root[:3,:3].T),
+                    self.cdata.oMf[self.lelbow_id].translation - self.cTf_lelbow[:3,3],
+                    self.cdata.oMf[self.relbow_id].translation - self.cTf_relbow[:3,3],                   
                 )
             ],
         )
 
+        self.root_translational_error = casadi.Function(
+            "root_translational_error",
+            [self.cq, self.cTf_root],
+            [
+                casadi.vertcat( 
+                    self.cdata.oMf[self.root_id].translation - self.cTf_root[:3,3],                  
+                )
+            ],
+        )
+        
+        self.foot_translational_error = casadi.Function(
+            "foot_translational_error",
+            [self.cq, self.cTf_lfoot, self.cTf_rfoot],
+            [
+                casadi.vertcat(
+                    self.cdata.oMf[self.lfoot_id].translation - self.cTf_lfoot[:3,3],
+                    self.cdata.oMf[self.rfoot_id].translation - self.cTf_rfoot[:3,3],                   
+                )
+            ],
+        )        
+        
+        self.knee_translational_error = casadi.Function(
+            "knee_translational_error",
+            [self.cq, self.cTf_lknee, self.cTf_rknee],
+            [
+                casadi.vertcat(
+                    self.cdata.oMf[self.lknee_id].translation - self.cTf_lknee[:3,3],
+                    self.cdata.oMf[self.rknee_id].translation - self.cTf_rknee[:3,3],                    
+                )
+            ],
+        )
+
+                
+        # self.rotational_error = casadi.Function(
+        #     "rotational_error",
+        #     [self.cq, self.cTf_lhand, self.cTf_rhand, self.cTf_lelbow, self.cTf_relbow, self.cTf_root, self.cTf_lfoot, self.cTf_rfoot, self.cTf_lknee, self.cTf_rknee],
+        #     [
+        #         casadi.vertcat(
+        #             cpin.log3(self.cdata.oMf[self.lhand_id].rotation @ self.cTf_lhand[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.rhand_id].rotation @ self.cTf_rhand[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.lelbow_id].rotation @ self.cTf_lelbow[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.relbow_id].rotation @ self.cTf_relbow[:3,:3].T),   
+        #             cpin.log3(self.cdata.oMf[self.root_id].rotation @ self.cTf_root[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.lfoot_id].rotation @ self.cTf_lfoot[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.rfoot_id].rotation @ self.cTf_rfoot[:3,:3].T),  
+        #             cpin.log3(self.cdata.oMf[self.lknee_id].rotation @ self.cTf_lknee[:3,:3].T),
+        #             cpin.log3(self.cdata.oMf[self.rknee_id].rotation @ self.cTf_rknee[:3,:3].T),                                                           
+        #         )
+        #     ],
+        # )
+
+        self.hand_rotational_error = casadi.Function(
+            "hand_rotational_error",
+            [self.cq, self.cTf_lhand, self.cTf_rhand],
+            [
+                casadi.vertcat(
+                    cpin.log3(self.cdata.oMf[self.lhand_id].rotation @ self.cTf_lhand[:3,:3].T),
+                    cpin.log3(self.cdata.oMf[self.rhand_id].rotation @ self.cTf_rhand[:3,:3].T),                                                          
+                )
+            ],
+        )
+        
+        self.elbow_rotational_error = casadi.Function(
+            "elbow_rotational_error",
+            [self.cq, self.cTf_lelbow, self.cTf_relbow],
+            [
+                casadi.vertcat(
+                    cpin.log3(self.cdata.oMf[self.lelbow_id].rotation @ self.cTf_lelbow[:3,:3].T),
+                    cpin.log3(self.cdata.oMf[self.relbow_id].rotation @ self.cTf_relbow[:3,:3].T),                                                            
+                )
+            ],
+        )        
+
+        self.root_rotational_error = casadi.Function(
+            "root_rotational_error",
+            [self.cq,  self.cTf_root],
+            [
+                casadi.vertcat(  
+                    cpin.log3(self.cdata.oMf[self.root_id].rotation @ self.cTf_root[:3,:3].T),                                                          
+                )
+            ],
+        )
+        
+        self.foot_rotational_error = casadi.Function(
+            "foot_rotational_error",
+            [self.cq, self.cTf_lfoot, self.cTf_rfoot],
+            [
+                casadi.vertcat(
+                    cpin.log3(self.cdata.oMf[self.lfoot_id].rotation @ self.cTf_lfoot[:3,:3].T),
+                    cpin.log3(self.cdata.oMf[self.rfoot_id].rotation @ self.cTf_rfoot[:3,:3].T),                                                           
+                )
+            ],
+        )
+        
+        self.knee_rotational_error = casadi.Function(
+            "knee_rotational_error",
+            [self.cq, self.cTf_lknee, self.cTf_rknee],
+            [
+                casadi.vertcat(  
+                    cpin.log3(self.cdata.oMf[self.lknee_id].rotation @ self.cTf_lknee[:3,:3].T),
+                    cpin.log3(self.cdata.oMf[self.rknee_id].rotation @ self.cTf_rknee[:3,:3].T),                                                           
+                )
+            ],
+        )        
+                
         # Defining the optimization problem
         self.opti = casadi.Opti()
         self.var_q = self.opti.variable(self.reduced_robot.model.nq)
         self.var_q_last = self.opti.parameter(self.reduced_robot.model.nq)   # for smooth
-        self.param_tf_lhand = self.opti.parameter(3, 1)
-        self.param_tf_rhand = self.opti.parameter(3, 1)
-        self.param_tf_lelbow = self.opti.parameter(3, 1)
-        self.param_tf_relbow = self.opti.parameter(3, 1)        
+        
+        self.param_tf_lhand = self.opti.parameter(4, 4)
+        self.param_tf_rhand = self.opti.parameter(4, 4)
+        self.param_tf_lelbow = self.opti.parameter(4, 4)
+        self.param_tf_relbow = self.opti.parameter(4, 4)        
         self.param_tf_root = self.opti.parameter(4, 4)
-        self.param_tf_lfoot = self.opti.parameter(3, 1)
-        self.param_tf_rfoot = self.opti.parameter(3, 1)
-        self.param_tf_lknee = self.opti.parameter(3, 1)
-        self.param_tf_rknee = self.opti.parameter(3, 1)
+        self.param_tf_lfoot = self.opti.parameter(4, 4)
+        self.param_tf_rfoot = self.opti.parameter(4, 4)
+        self.param_tf_lknee = self.opti.parameter(4, 4)
+        self.param_tf_rknee = self.opti.parameter(4, 4)
                 
-        self.translational_cost = casadi.sumsqr(self.translational_error(self.var_q, self.param_tf_lhand, self.param_tf_rhand, self.param_tf_lelbow, self.param_tf_relbow, self.param_tf_root, self.param_tf_lfoot, self.param_tf_rfoot, self.param_tf_lknee, self.param_tf_rknee))
-        self.rotation_cost = casadi.sumsqr(self.rotational_error(self.var_q, self.param_tf_root))
+        self.hand_translational_cost = casadi.sumsqr(self.hand_translational_error(self.var_q, self.param_tf_lhand, self.param_tf_rhand))
+        self.elbow_translational_cost = casadi.sumsqr(self.elbow_translational_error(self.var_q, self.param_tf_lelbow, self.param_tf_relbow))
+        self.root_translational_cost = casadi.sumsqr(self.root_translational_error(self.var_q, self.param_tf_root))
+        self.foot_translational_cost = casadi.sumsqr(self.foot_translational_error(self.var_q, self.param_tf_lfoot, self.param_tf_rfoot))
+        self.knee_translational_cost = casadi.sumsqr(self.knee_translational_error(self.var_q, self.param_tf_lknee, self.param_tf_rknee))
+                     
+        self.hand_rotation_cost = casadi.sumsqr(self.hand_rotational_error(self.var_q, self.param_tf_lhand, self.param_tf_rhand))
+        self.elbow_rotation_cost = casadi.sumsqr(self.elbow_rotational_error(self.var_q, self.param_tf_lelbow, self.param_tf_relbow))
+        self.root_rotation_cost = casadi.sumsqr(self.root_rotational_error(self.var_q, self.param_tf_root))
+        self.foot_rotation_cost = casadi.sumsqr(self.foot_rotational_error(self.var_q, self.param_tf_lfoot, self.param_tf_rfoot))
+        self.knee_rotation_cost = casadi.sumsqr(self.knee_rotational_error(self.var_q, self.param_tf_lknee, self.param_tf_rknee))
+                
         self.regularization_cost = casadi.sumsqr(self.var_q)
         self.smooth_cost = casadi.sumsqr(self.var_q - self.var_q_last)
 
@@ -210,8 +356,9 @@ class RobotIK:
             self.var_q,
             self.reduced_robot.model.upperPositionLimit)
         )
-        self.opti.minimize(50 * self.translational_cost + self.rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost)
-
+        self.opti.minimize( 10 * self.root_translational_cost + 10 * self.foot_translational_cost + 10 *self.knee_translational_cost + 6 * self.elbow_translational_cost + 2 * self.hand_translational_cost + \
+                            1 * self.root_rotation_cost + 1 * self.foot_rotation_cost + 1 * self.knee_rotation_cost + 0.1*self.elbow_rotation_cost + 0.05*self.hand_rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost )
+        
         opts = {
             'ipopt':{
                 'print_level':0,
@@ -268,16 +415,16 @@ class RobotIK:
             self.init_data = current_lr_arm_motor_q
         self.opti.set_initial(self.var_q, self.init_data)
 
-        # if self.Visualization:
-        #     self.vis.viewer['lhand_target'].set_transform(left_hand)   # for visualization
-        #     self.vis.viewer['rhand_target'].set_transform(right_hand)  # for visualization
-        #     self.vis.viewer['lfoot_target'].set_transform(left_foot)   # for visualization
-        #     self.vis.viewer['rfoot_target'].set_transform(right_foot)  # for visualization
-        #     self.vis.viewer['root_target'].set_transform(root)         # for visualization
-        #     self.vis.viewer['lelbow_target'].set_transform(left_elbow)       # for visualization
-        #     self.vis.viewer['relbow_target'].set_transform(right_elbow)       # for visualization
-        #     self.vis.viewer['lknee_target'].set_transform(left_knee)        # for visualization
-        #     self.vis.viewer['rknee_target'].set_transform(right_knee)        # for visualization
+        if self.Visualization:
+            self.vis.viewer['lhand_target'].set_transform(left_hand)          # for visualization
+            self.vis.viewer['rhand_target'].set_transform(right_hand)  # for visualization
+            self.vis.viewer['lfoot_target'].set_transform(left_foot)   # for visualization
+            self.vis.viewer['rfoot_target'].set_transform(right_foot)  # for visualization
+            self.vis.viewer['root_target'].set_transform(root)         # for visualization
+            self.vis.viewer['lelbow_target'].set_transform(left_elbow)       # for visualization
+            self.vis.viewer['relbow_target'].set_transform(right_elbow)       # for visualization
+            self.vis.viewer['lknee_target'].set_transform(left_knee)        # for visualization
+            self.vis.viewer['rknee_target'].set_transform(right_knee)        # for visualization
 
         self.opti.set_value(self.param_tf_lhand, left_hand)
         self.opti.set_value(self.param_tf_rhand, right_hand)
@@ -370,20 +517,15 @@ def main(cfg : DictConfig) -> None:
     smpl_joint_pick = [i[1] for i in cfg.robot.smpl_joints_matches]
     smpl_joint_pick_idx = [SMPL_BONE_ORDER_NAMES.index(j) for j in smpl_joint_pick]
     
-    # print("smpl_joint_pick_idx")
-    # print(smpl_joint_pick_idx)
-    
     
     robot_ik = RobotIK(Visualization = True)
     
-    # print(all_data)
-    
-    for data_key, data_value in all_data.items():
-        root_tf = data_value["root_homogeneous_matrices"]
-        joints_pos = data_value["joints_translations"]
 
-    print(joints_pos[0,smpl_joint_pick_idx[0]].view(3,1).numpy())
-    print(root_tf.shape)
+    for data_key, data_value in all_data.items():
+        joints_tf = data_value["link_homogeneous_tf"]
+
+    # print(joints_pos[0,smpl_joint_pick_idx[0]].view(3,1).numpy())
+    # print(root_tf.shape)
     sol_q_last = np.zeros(24)
     sol_q_last[12] = -0.1        #赋一个初始值,注意这里的顺序要和pinocchio动力学库的关节顺序保持一致
     sol_q_last[13] = 0.3
@@ -392,19 +534,21 @@ def main(cfg : DictConfig) -> None:
     sol_q_last[22] = 0.3
     sol_q_last[23] = -0.2
     
-    motion_num = root_tf.shape[0]
+    motion_num = joints_tf.shape[1]
     print(motion_num)
     
+    
+    
     for i in range(motion_num):
-        sol_q = robot_ik.solve_ik(joints_pos[i,smpl_joint_pick_idx[0]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[1]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[2]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[3]].view(3,1).numpy(),
-                                  root_tf[i],
-                                  joints_pos[i,smpl_joint_pick_idx[5]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[6]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[7]].view(3,1).numpy(),
-                                  joints_pos[i,smpl_joint_pick_idx[8]].view(3,1).numpy(),
+        sol_q = robot_ik.solve_ik(joints_tf[smpl_joint_pick_idx[0],i],
+                                  joints_tf[smpl_joint_pick_idx[1],i],
+                                  joints_tf[smpl_joint_pick_idx[2],i],
+                                  joints_tf[smpl_joint_pick_idx[3],i],
+                                  joints_tf[smpl_joint_pick_idx[4],i],
+                                  joints_tf[smpl_joint_pick_idx[5],i],
+                                  joints_tf[smpl_joint_pick_idx[6],i],
+                                  joints_tf[smpl_joint_pick_idx[7],i],
+                                  joints_tf[smpl_joint_pick_idx[8],i],
                                   current_lr_arm_motor_q=sol_q_last
                                 )
         sol_q_last = sol_q
