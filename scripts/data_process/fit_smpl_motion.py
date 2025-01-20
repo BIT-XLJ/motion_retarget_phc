@@ -356,8 +356,8 @@ class RobotIK:
             self.var_q,
             self.reduced_robot.model.upperPositionLimit)
         )
-        self.opti.minimize( 10 * self.root_translational_cost + 10 * self.foot_translational_cost + 10 *self.knee_translational_cost + 6 * self.elbow_translational_cost + 2 * self.hand_translational_cost + \
-                            1 * self.root_rotation_cost + 1 * self.foot_rotation_cost + 1 * self.knee_rotation_cost + 0.1*self.elbow_rotation_cost + 0.05*self.hand_rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost )
+        self.opti.minimize( 20 * self.root_translational_cost + 50 * self.foot_translational_cost + 20 *self.knee_translational_cost + 6 * self.elbow_translational_cost + 12 * self.hand_translational_cost + \
+                            1 * self.root_rotation_cost + 0.5 * self.foot_rotation_cost + 1 * self.knee_rotation_cost + 0.1*self.elbow_rotation_cost + 0.05*self.hand_rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost )
         
         opts = {
             'ipopt':{
