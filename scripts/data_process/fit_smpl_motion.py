@@ -1,6 +1,8 @@
 import glob
 import os
 import sys
+import time
+import csv
 from scipy.spatial.transform import Rotation as sRot
 import numpy as np
 import torch
@@ -119,7 +121,7 @@ def process_motion(key_names, key_name_to_pkls, cfg):
 class RobotIK:
     def __init__(self, Visualization = False):
         np.set_printoptions(precision=5, suppress=True, linewidth=200)
-
+        
         self.Visualization = Visualization
         
         self.joint_model = pin.JointModelComposite()
@@ -356,8 +358,8 @@ class RobotIK:
             self.var_q,
             self.reduced_robot.model.upperPositionLimit)
         )
-        self.opti.minimize( 20 * self.root_translational_cost + 50 * self.foot_translational_cost + 20 *self.knee_translational_cost + 6 * self.elbow_translational_cost + 12 * self.hand_translational_cost + \
-                            1 * self.root_rotation_cost + 0.5 * self.foot_rotation_cost + 1 * self.knee_rotation_cost + 0.1*self.elbow_rotation_cost + 0.05*self.hand_rotation_cost + 0.02 * self.regularization_cost + 0.8 * self.smooth_cost )
+        self.opti.minimize( 5 * self.root_translational_cost + 20 * self.foot_translational_cost + 10 *self.knee_translational_cost + 20 * self.elbow_translational_cost + 10 * self.hand_translational_cost + \
+                            0.1 * self.root_rotation_cost + 0.1 * self.foot_rotation_cost + 0.1 * self.knee_rotation_cost + 0.1 * self.elbow_rotation_cost + 0.01*self.hand_rotation_cost + 0.02 * self.regularization_cost + 1 * self.smooth_cost )
         
         opts = {
             'ipopt':{
@@ -533,11 +535,21 @@ def main(cfg : DictConfig) -> None:
     sol_q_last[21] = -0.1
     sol_q_last[22] = 0.3
     sol_q_last[23] = -0.2
-    
+    data = []
     motion_num = joints_tf.shape[1]
     print(motion_num)
     
+    joint_names = [
+        'L_arm_shoulder_pitch_joint','L_arm_shoulder_roll_joint','L_arm_shoulder_yaw_joint','L_arm_elbow_joint','L_leg_hip_roll_joint',\
+        'L_leg_hip_yaw_joint','L_leg_hip_pitch_joint','L_leg_knee_joint','L_leg_ankle_joint','R_arm_shoulder_pitch_joint','R_arm_shoulder_roll_joint',\
+        'R_arm_shoulder_yaw_joint','R_arm_elbow_joint','R_leg_hip_roll_joint','R_leg_hip_yaw_joint','R_leg_hip_pitch_joint','R_leg_knee_joint','R_leg_ankle_joint'
+    ]
+
+    start_time = time.time()
     
+    print (int(round(start_time * 1000)))
+    
+    framenums = 0
     
     for i in range(motion_num):
         sol_q = robot_ik.solve_ik(joints_tf[smpl_joint_pick_idx[0],i],
@@ -552,6 +564,24 @@ def main(cfg : DictConfig) -> None:
                                   current_lr_arm_motor_q=sol_q_last
                                 )
         sol_q_last = sol_q
+        framenums += 1
+        timestamp = time.time() - start_time
+        time_sol_q = np.insert(sol_q, 0, timestamp)
+        frame_time_sol_q = np.insert(time_sol_q, 0, framenums)
+        data.append(frame_time_sol_q)
+        
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    output_directory = os.path.join(script_directory, 'data')
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    file_path = os.path.join(output_directory, 'output.csv')
+        
+    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['frame','timestamp','posX','posY','posZ','roll','pitch','yaw'] + joint_names)
+        for arr in data:
+            writer.writerow(arr)        
+        
         
 if __name__ == "__main__":
     main()
