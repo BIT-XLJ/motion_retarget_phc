@@ -35,20 +35,15 @@ class Vis:
         file_path = os.path.join(output_directory, 'output.csv')
         self.motions_path = file_path
         
-        self.mixed_jointsToLockIDs =[]
-        self.reduced_robot = self.robot.buildReducedRobot(
-            list_of_joints_to_lock=self.mixed_jointsToLockIDs,
-            reference_configuration=np.array([0.0] * self.robot.model.nq),
-        )
         
         self.vis = None
 
         if self.Visualization:
-            self.vis = MeshcatVisualizer(self.reduced_robot.model, self.reduced_robot.collision_model, self.reduced_robot.visual_model)
+            self.vis = MeshcatVisualizer(self.robot.model, self.robot.collision_model, self.robot.visual_model)
             self.vis.initViewer(open=True) 
             self.vis.loadViewerModel("pinocchio") 
             self.vis.displayFrames(True, frame_ids=[101, 102], axis_length = 0.15, axis_width = 5)
-            self.vis.display(pin.neutral(self.reduced_robot.model))
+            self.vis.display(pin.neutral(self.robot.model))
     
     def vis_from_csv(self):
             csv_reader = pd.read_csv(self.motions_path)
@@ -60,7 +55,8 @@ class Vis:
                 time_now = row[1]
                 if self.Visualization:
                     self.vis.display(np.array(sol_q))  # for visualization 
-                time.sleep(time_now - time_last)
+                # time.sleep(time_now - time_last)
+                time.sleep(0.1)
                 time_last = time_now
 
 
