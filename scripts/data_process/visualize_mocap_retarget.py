@@ -24,8 +24,8 @@ class Vis:
         self.joint_model.addJoint(pin.JointModelRZ())  # Yaw
 
         current_path = os.path.dirname(os.path.abspath(__file__))
-        urdf_path = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf', 'N2.urdf')
-        urdf_dirs = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf')
+        urdf_path = os.path.join(current_path, '../../phc/data/assets/robot/N2/urdf', 'N2.urdf')
+        urdf_dirs = os.path.join(current_path, '../../phc/data/assets/robot/N2/urdf')
         self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path,
                                                     root_joint = self.joint_model,
                                                     package_dirs = urdf_dirs)
@@ -60,7 +60,7 @@ class Vis:
                 time_now = row[1]
                 if self.Visualization:
                     self.vis.display(np.array(sol_q))  # for visualization 
-                time.sleep(time_now - time_last)
+                time.sleep((time_now - time_last)*3)
                 time_last = time_now
 
 

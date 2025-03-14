@@ -78,14 +78,14 @@ def process_motion(key_names, key_name_to_pkls, cfg):
         print("--------------------------------------")
         amass_data = load_amass_data(key_name_to_pkls[data_key])
         if amass_data is None: continue
-        skip = int(amass_data['fps']//60)
+        skip = int(amass_data['fps']//60)    #60帧
         trans = torch.from_numpy(amass_data['trans'][::skip])  #::skip是切片，
         pose_aa_walk = torch.from_numpy(amass_data['pose_aa'][::skip]).float()
         
         verts, joints = smpl_parser_n.get_joints_verts(pose_aa_walk, shape_new, trans)
         root_pos = joints[:, 0:1] #joints代表的是关节的位置数据
         joints = (joints - joints[:, 0:1]) * scale.detach() + root_pos
-        joints[..., 2] = joints[..., 2] - verts[0, :, 2].min().item() - 0.7
+        joints[..., 2] = joints[..., 2] - verts[0, :, 2].min().item() - 0.72
         
         N = joints.shape[0]
         link_homogeneous_tf = np.zeros((np.int32(pose_aa_walk.shape[1]/3), N, 4, 4))
@@ -134,8 +134,8 @@ class RobotIK:
         self.joint_model.addJoint(pin.JointModelRZ())  # Yaw
 
         current_path = os.path.dirname(os.path.abspath(__file__))
-        urdf_path = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf', 'N2.urdf')
-        urdf_dirs = os.path.join(current_path, '../../phc/data/assets/robot/noetix_n2/urdf')
+        urdf_path = os.path.join(current_path, '../../phc/data/assets/robot/N2/urdf', 'N2.urdf')
+        urdf_dirs = os.path.join(current_path, '../../phc/data/assets/robot/N2/urdf')
         self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path,
                                                     root_joint = self.joint_model,
                                                     package_dirs = urdf_dirs)
@@ -150,7 +150,7 @@ class RobotIK:
         self.cmodel = cpin.Model(self.reduced_robot.model)
         self.cdata = self.cmodel.createData()
         # print("输出pinocchio关节顺序")
-        # print(self.cmodel)
+        print(self.cmodel)
         
         # Creating symbolic variables
         self.cq = casadi.SX.sym("q", self.reduced_robot.model.nq, 1)
@@ -167,15 +167,15 @@ class RobotIK:
         cpin.framesForwardKinematics(self.cmodel, self.cdata, self.cq)
 
         # Get the hand joint ID and define the error function
-        self.lhand_id = self.reduced_robot.model.getFrameId("L_arm_hand_Link")
-        self.rhand_id = self.reduced_robot.model.getFrameId("R_arm_hand_Link")
-        self.lelbow_id = self.reduced_robot.model.getFrameId("L_arm_elbow_Link")
-        self.relbow_id = self.reduced_robot.model.getFrameId("R_arm_elbow_Link")        
+        self.lhand_id = self.reduced_robot.model.getFrameId("l_arm_hand_Link")
+        self.rhand_id = self.reduced_robot.model.getFrameId("r_arm_hand_Link")
+        self.lelbow_id = self.reduced_robot.model.getFrameId("l_arm_elbow_Link")
+        self.relbow_id = self.reduced_robot.model.getFrameId("r_arm_elbow_Link")        
         self.root_id = self.reduced_robot.model.getFrameId("base_link") # pelvis
-        self.lfoot_id = self.reduced_robot.model.getFrameId("L_leg_ankle_link")
-        self.rfoot_id = self.reduced_robot.model.getFrameId("R_leg_ankle_link")
-        self.lknee_id = self.reduced_robot.model.getFrameId("L_leg_knee_link")
-        self.rknee_id = self.reduced_robot.model.getFrameId("R_leg_knee_link")        
+        self.lfoot_id = self.reduced_robot.model.getFrameId("l_leg_ankle_link")
+        self.rfoot_id = self.reduced_robot.model.getFrameId("r_leg_ankle_link")
+        self.lknee_id = self.reduced_robot.model.getFrameId("l_leg_knee_link")
+        self.rknee_id = self.reduced_robot.model.getFrameId("r_leg_knee_link")        
         
         # self.translational_error = casadi.Function(
         #     "translational_error",
@@ -325,6 +325,7 @@ class RobotIK:
         # Defining the optimization problem
         self.opti = casadi.Opti()
         self.var_q = self.opti.variable(self.reduced_robot.model.nq)
+        print(self.reduced_robot.model)
         self.var_q_last = self.opti.parameter(self.reduced_robot.model.nq)   # for smooth
         
         self.param_tf_lhand = self.opti.parameter(4, 4)
@@ -358,8 +359,8 @@ class RobotIK:
             self.var_q,
             self.reduced_robot.model.upperPositionLimit)
         )
-        self.opti.minimize( 5 * self.root_translational_cost + 20 * self.foot_translational_cost + 10 *self.knee_translational_cost + 20 * self.elbow_translational_cost + 10 * self.hand_translational_cost + \
-                            0.1 * self.root_rotation_cost + 0.1 * self.foot_rotation_cost + 0.1 * self.knee_rotation_cost + 0.1 * self.elbow_rotation_cost + 0.01*self.hand_rotation_cost + 0.02 * self.regularization_cost + 1 * self.smooth_cost )
+        self.opti.minimize( 20 * self.root_translational_cost + 20 * self.foot_translational_cost + 20 *self.knee_translational_cost + 20 * self.elbow_translational_cost + 10 * self.hand_translational_cost + \
+                            0.1 * self.root_rotation_cost + 0.01 * self.foot_rotation_cost + 0.1 * self.knee_rotation_cost + 0.1 * self.elbow_rotation_cost + 0.01*self.hand_rotation_cost + 0.02 * self.regularization_cost + 1 * self.smooth_cost )
         
         opts = {
             'ipopt':{
@@ -540,9 +541,9 @@ def main(cfg : DictConfig) -> None:
     print(motion_num)
     
     joint_names = [
-        'L_arm_shoulder_pitch_joint','L_arm_shoulder_roll_joint','L_arm_shoulder_yaw_joint','L_arm_elbow_joint','L_leg_hip_roll_joint',\
-        'L_leg_hip_yaw_joint','L_leg_hip_pitch_joint','L_leg_knee_joint','L_leg_ankle_joint','R_arm_shoulder_pitch_joint','R_arm_shoulder_roll_joint',\
-        'R_arm_shoulder_yaw_joint','R_arm_elbow_joint','R_leg_hip_roll_joint','R_leg_hip_yaw_joint','R_leg_hip_pitch_joint','R_leg_knee_joint','R_leg_ankle_joint'
+        'l_arm_shoulder_pitch_joint','l_arm_shoulder_roll_joint','l_arm_shoulder_yaw_joint','l_arm_elbow_joint','l_leg_hip_yaw_joint',\
+        'l_leg_hip_roll_joint','l_leg_hip_pitch_joint','l_leg_knee_joint','l_leg_ankle_joint','r_arm_shoulder_pitch_joint','r_arm_shoulder_roll_joint',\
+        'r_arm_shoulder_yaw_joint','r_arm_elbow_joint','r_leg_hip_yaw_joint','r_leg_hip_roll_joint','r_leg_hip_pitch_joint','r_leg_knee_joint','r_leg_ankle_joint'
     ]
 
     start_time = time.time()

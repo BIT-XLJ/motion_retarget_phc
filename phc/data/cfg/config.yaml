@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - env: env_im
-  - robot: smpl_humanoid
+  - robot: noetix_n2_fitting
   - learning: im
   - sim: default_sim
   - control: default_control
@@ -31,7 +31,17 @@ play: ${test}
 train: True
 collect_dataset: False
 disable_multiprocessing: True
-
+amass_root : /home/djh/amass_data/SFU/SFU
+# smpl_joints_matches:
+#   - ["L_arm_hand_Link", "L_Hand"]
+#   - ["R_arm_hand_Link", "R_Hand"]
+#   - ["L_arm_elbow_Link", "L_Elbow"]
+#   - ["R_arm_elbow_Link", "R_Elbow"]
+#   - ["base_link", "Pelvis"]
+#   - ["L_leg_ankle_link", "L_Ankle"]
+#   - ["R_leg_ankle_link", "R_Ankle"]
+#   - ["L_leg_knee_link", "L_Knee"]
+#   - ["R_leg_knee_link", "R_Knee"]
 
 ####### Testing Configs. ########
 server_mode: False

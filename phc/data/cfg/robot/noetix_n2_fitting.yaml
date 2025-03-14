@@ -25,50 +25,50 @@ real_weight_porpotion_boxes: True
 
 
 body_names: [ 'base_link', 
-                   'L_leg_hip_roll_link', 'L_leg_hip_yaw_link', 'L_leg_hip_pitch_link', 'L_leg_knee_link', 'L_leg_ankle_link',
-                   'R_leg_hip_roll_link', 'R_leg_hip_yaw_link', 'R_leg_hip_pitch_link', 'R_leg_knee_link', 'R_leg_ankle_link',
-                   'L_arm_shoulder_pitch_Link', 'L_arm_shoulder_roll_Link', 'L_arm_shoulder_yaw_Link', 'L_arm_elbow_Link', 
-                   'R_arm_shoulder_pitch_Link', 'R_arm_shoulder_roll_Link', 'R_arm_shoulder_yaw_Link', 'R_arm_elbow_Link' ]
+                   'l_leg_hip_yaw_link', 'l_leg_hip_roll_link', 'l_leg_hip_pitch_link', 'l_leg_knee_link', 'l_leg_ankle_link',
+                   'r_leg_hip_yaw_link', 'r_leg_hip_roll_link', 'r_leg_hip_pitch_link', 'r_leg_knee_link', 'r_leg_ankle_link',
+                   'l_arm_shoulder_pitch_Link', 'l_arm_shoulder_roll_Link', 'l_arm_shoulder_yaw_Link', 'l_arm_elbow_Link', 
+                   'r_arm_shoulder_pitch_Link', 'r_arm_shoulder_roll_Link', 'r_arm_shoulder_yaw_Link', 'r_arm_elbow_Link' ]
 limb_weight_group: 
-  - ['L_leg_hip_roll_link', 'L_leg_hip_yaw_link',  'L_leg_hip_pitch_link', 'L_leg_knee_link', 'L_leg_ankle_link']
-  - ['R_leg_hip_roll_link', 'R_leg_hip_yaw_link',  'R_leg_hip_pitch_link', 'R_leg_knee_link', 'R_leg_ankle_link']
-  - ['L_arm_shoulder_pitch_Link', 'L_arm_shoulder_roll_Link', 'L_arm_shoulder_yaw_Link', 'L_arm_elbow_Link']
-  - ['R_arm_shoulder_pitch_Link', 'R_arm_shoulder_roll_Link', 'R_arm_shoulder_yaw_Link', 'R_arm_elbow_Link']
-dof_names: ['L_leg_hip_roll_link', 'L_leg_hip_yaw_link',  'L_leg_hip_pitch_link', 'L_leg_knee_link', 'L_leg_ankle_link',
-            'R_leg_hip_roll_link', 'R_leg_hip_yaw_link',  'R_leg_hip_pitch_link', 'R_leg_knee_link', 'R_leg_ankle_link',
-            'L_arm_shoulder_pitch_Link', 'L_arm_shoulder_roll_Link', 'L_arm_shoulder_yaw_Link', 'L_arm_elbow_Link',
-            'R_arm_shoulder_pitch_Link', 'R_arm_shoulder_roll_Link', 'R_arm_shoulder_yaw_Link', 'R_arm_elbow_Link']
+  - ['l_leg_hip_yaw_link', 'l_leg_hip_roll_link',  'l_leg_hip_pitch_link', 'l_leg_knee_link', 'l_leg_ankle_link']
+  - ['r_leg_hip_yaw_link', 'r_leg_hip_roll_link',  'r_leg_hip_pitch_link', 'r_leg_knee_link', 'r_leg_ankle_link']
+  - ['l_arm_shoulder_pitch_Link', 'l_arm_shoulder_roll_Link', 'l_arm_shoulder_yaw_Link', 'l_arm_elbow_Link']
+  - ['r_arm_shoulder_pitch_Link', 'r_arm_shoulder_roll_Link', 'r_arm_shoulder_yaw_Link', 'r_arm_elbow_Link']
+dof_names: ['l_leg_hip_yaw_link', 'l_leg_hip_roll_link',  'l_leg_hip_pitch_link', 'l_leg_knee_link', 'l_leg_ankle_link',
+            'r_leg_hip_yaw_link', 'r_leg_hip_roll_link',  'r_leg_hip_pitch_link', 'r_leg_knee_link', 'r_leg_ankle_link',
+            'l_arm_shoulder_pitch_Link', 'l_arm_shoulder_roll_Link', 'l_arm_shoulder_yaw_Link', 'l_arm_elbow_Link',
+            'r_arm_shoulder_pitch_Link', 'r_arm_shoulder_roll_Link', 'r_arm_shoulder_yaw_Link', 'r_arm_elbow_Link']
 
-right_foot_name: 'R_leg_ankle_link'
-left_foot_name: 'L_leg_ankle_link'
+right_foot_name: 'r_leg_ankle_link'
+left_foot_name: 'l_leg_ankle_link'
 
 
 sim_with_urdf: True
 asset:
   assetRoot: "./"
   assetFileName: "phc/data/assets/robot/noetix_n2/N2.xml"
-  urdfFileName: "phc/data/assets/robot/noetix_n2/urdf/N2.urdf"
+  urdfFileName: "phc/data/assets/robot/N2/urdf/N2.urdf"
 
 #### Config for extension
 extend_config:
-  - joint_name: "L_arm_hand_Link"
-    parent_name: "L_arm_elbow_Link"
+  - joint_name: "l_arm_hand_Link"
+    parent_name: "l_arm_elbow_Link"
     pos: [0.12, 0.0, -0.16]
     rot: [1.0, 0.0, 0.0, 0.0]
-  - joint_name: "R_arm_hand_Link"
-    parent_name: "R_arm_elbow_Link"
+  - joint_name: "r_arm_hand_Link"
+    parent_name: "r_arm_elbow_Link"
     pos: [0.12, 0.0, -0.16]
     rot: [1.0, 0.0, 0.0, 0.0]
   - joint_name: "head_link"
     parent_name: "base_link"
     pos: [0.0, 0.0, 0.32]
     rot: [1.0, 0.0, 0.0, 0.0]
-  - joint_name: "L_toe_link"
-    parent_name: "L_leg_ankle_link"
+  - joint_name: "l_toe_link"
+    parent_name: "l_leg_ankle_link"
     pos: [0.08, 0.0, 0.0]
     rot: [1.0, 0.0, 0.0, 0.0]
-  - joint_name: "R_toe_link"
-    parent_name: "R_leg_ankle_link"
+  - joint_name: "r_toe_link"
+    parent_name: "r_leg_ankle_link"
     pos: [0.08, 0.0, 0.0]
     rot: [1.0, 0.0, 0.0, 0.0]
     
@@ -76,32 +76,32 @@ extend_config:
 base_link: "base_link"
 joint_matches:
   - ["base_link", "Pelvis"]
-  - ["L_leg_hip_roll_link", "L_Hip"]
-  - ["L_leg_knee_link", "L_Knee"]
-  - ["L_leg_ankle_link", "L_Ankle"]
-  - ["R_leg_hip_roll_link", "R_Hip"]
-  - ["R_leg_knee_link", "R_Knee"]
-  - ["R_leg_ankle_link", "R_Ankle"]
-  - ["L_arm_shoulder_pitch_Link", "L_Shoulder"]
-  - ["L_arm_elbow_Link", "L_Elbow"]
-  - ["L_arm_hand_Link", "L_Hand"]
-  - ["R_arm_shoulder_pitch_Link", "R_Shoulder"]
-  - ["R_arm_elbow_Link", "R_Elbow"]
-  - ["R_arm_hand_Link", "R_Hand"]
+  - ["l_leg_hip_roll_link", "L_Hip"]
+  - ["l_leg_knee_link", "L_Knee"]
+  - ["l_leg_ankle_link", "L_Ankle"]
+  - ["r_leg_hip_roll_link", "R_Hip"]
+  - ["r_leg_knee_link", "R_Knee"]
+  - ["r_leg_ankle_link", "R_Ankle"]
+  - ["l_arm_shoulder_roll_Link", "L_Shoulder"]
+  - ["l_arm_elbow_Link", "L_Elbow"]
+  - ["l_arm_hand_Link", "L_Hand"]
+  - ["r_arm_shoulder_roll_Link", "R_Shoulder"]
+  - ["r_arm_elbow_Link", "R_Elbow"]
+  - ["r_arm_hand_Link", "R_Hand"]
   - ["head_link", "Head"]
-  - ["L_toe_link", "L_Toe"]
-  - ["R_toe_link", "R_Toe"]
+  - ["l_toe_link", "L_Toe"]
+  - ["r_toe_link", "R_Toe"]
 
 smpl_joints_matches:
-  - ["L_arm_hand_Link", "L_Hand"]
-  - ["R_arm_hand_Link", "R_Hand"]
-  - ["L_arm_elbow_Link", "L_Elbow"]
-  - ["R_arm_elbow_Link", "R_Elbow"]
+  - ["l_arm_hand_Link", "L_Hand"]
+  - ["r_arm_hand_Link", "R_Hand"]
+  - ["l_arm_elbow_Link", "L_Elbow"]
+  - ["r_arm_elbow_Link", "R_Elbow"]
   - ["base_link", "Pelvis"]
-  - ["L_leg_ankle_link", "L_Ankle"]
-  - ["R_leg_ankle_link", "R_Ankle"]
-  - ["L_leg_knee_link", "L_Knee"]
-  - ["R_leg_knee_link", "R_Knee"]
+  - ["l_leg_ankle_link", "L_Ankle"]
+  - ["r_leg_ankle_link", "R_Ankle"]
+  - ["l_leg_knee_link", "L_Knee"]
+  - ["r_leg_knee_link", "R_Knee"]
 
 
 smpl_pose_modifier:
